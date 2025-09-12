@@ -33,6 +33,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { QuotationStatus, QuotationStatusLabels, ProductType } from '@/lib/types'
+import { downloadQuotationPdf } from '@/lib/pdf-generator'
 
 // Simplified types for mock data
 interface QuotationDetailCustomer {
@@ -218,8 +219,24 @@ export default function QuotationDetailPage() {
     if (!quotation) return
     
     try {
-      // TODO: Implement actual PDF download with proper types
-      alert('PDF indirme özelliği aktif edildi. Bu özellik yakında gelecek.')
+      await downloadQuotationPdf({
+        quotation: {
+          ...quotation,
+          customer: {
+            ...quotation.customer,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        },
+        companyInfo: {
+          name: 'MAPOS',
+          address: 'İstanbul, Türkiye',
+          phone: '+90 212 000 00 00',
+          email: 'info@mapos.com',
+          website: 'www.mapos.com'
+        },
+        exchangeRate: quotation.exchangeRate || 30.0
+      })
     } catch (error) {
       console.error('PDF indirme hatası:', error)
       alert('PDF indirilemedi. Lütfen tekrar deneyin.')
@@ -235,7 +252,7 @@ export default function QuotationDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/teklifler">
@@ -254,7 +271,7 @@ export default function QuotationDetailPage() {
 
   if (!quotation) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/teklifler">
@@ -288,7 +305,7 @@ export default function QuotationDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">

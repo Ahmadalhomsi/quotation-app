@@ -1,0 +1,92 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient, ProductType } from '../../generated/prisma'
+import { CreateProductData } from '@/lib/types'
+
+const prisma = new PrismaClient()
+
+// GET /api/products - Tüm ürünleri listele
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const isActive = searchParams.get('active')
+    const type = searchParams.get('type')
+    
+    const where: { isActive?: boolean; type?: ProductType } = {}
+    
+    if (isActive !== null) {
+      where.isActive = isActive === 'true'
+    }
+    
+    if (type && (type === 'SOFTWARE' || type === 'HARDWARE')) {
+      where.type = type as ProductType
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc'
+      },
+      include: {
+        _count: {
+          select: { quotationItems: true }
+        }
+      }
+    })
+
+    return NextResponse.json({ products })
+  } catch (error) {
+    console.error('Ürünler alınırken hata:', error)
+    return NextResponse.json(
+      { error: 'Ürünler alınamadı' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/products - Yeni ürün oluştur
+export async function POST(request: NextRequest) {
+  try {
+    const body: CreateProductData = await request.json()
+    
+    // Validation
+    if (!body.name || !body.price || !body.currency || !body.type) {
+      return NextResponse.json(
+        { error: 'Ürün adı, fiyat, para birimi ve ürün tipi gereklidir' },
+        { status: 400 }
+      )
+    }
+
+    if (body.price <= 0) {
+      return NextResponse.json(
+        { error: 'Fiyat 0\'dan büyük olmalıdır' },
+        { status: 400 }
+      )
+    }
+
+    // Check if SKU already exists
+    if (body.sku) {
+      const existingProduct = await prisma.product.findUnique({
+        where: { sku: body.sku }
+      })
+
+      if (existingProduct) {
+        return NextResponse.json(
+          { error: 'Bu SKU kodu zaten kullanılıyor' },
+          { status: 409 }
+        )
+      }
+    }
+
+    const product = await prisma.product.create({
+      data: body
+    })
+
+    return NextResponse.json({ product }, { status: 201 })
+  } catch (error) {
+    console.error('Ürün oluşturulurken hata:', error)
+    return NextResponse.json(
+      { error: 'Ürün oluşturulamadı' },
+      { status: 500 }
+    )
+  }
+}
