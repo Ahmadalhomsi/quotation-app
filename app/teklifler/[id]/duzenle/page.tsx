@@ -230,7 +230,10 @@ export default function EditQuotationPage() {
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          currency: item.currency
+          totalPrice: item.quantity * item.unitPrice, // Calculate totalPrice
+          currency: item.currency,
+          productName: item.product?.name || '', // Add productName
+          productType: item.product?.type || ProductType.SOFTWARE // Add productType
         }))
       }
 

@@ -158,7 +158,7 @@ export async function PUT(
 
     // Update items if provided
     if (body.items && body.items.length > 0) {
-      // Delete existing items
+      // Delete existing items only if we have new items to replace them
       await prisma.quotationItem.deleteMany({
         where: { quotationId: resolvedParams.id }
       })
@@ -184,6 +184,21 @@ export async function PUT(
           productType: item.productType
         }))
       })
+
+      // Fetch the updated quotation with items
+      const finalQuotation = await prisma.quotation.findUnique({
+        where: { id: resolvedParams.id },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true
+            }
+          }
+        }
+      })
+
+      return NextResponse.json({ quotation: finalQuotation })
     }
 
     return NextResponse.json({ quotation: updatedQuotation })

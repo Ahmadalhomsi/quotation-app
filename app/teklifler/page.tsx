@@ -73,6 +73,36 @@ export default function QuotationsPage() {
     }
   }
 
+  const handleStatusUpdate = async (quotationId: string, newStatus: QuotationStatus) => {
+    try {
+      const response = await fetch(`/api/quotations/${quotationId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (response.ok) {
+        // Update the local state
+        setQuotations(prevQuotations =>
+          prevQuotations.map(quotation =>
+            quotation.id === quotationId
+              ? { ...quotation, status: newStatus }
+              : quotation
+          )
+        )
+      } else {
+        const errorData = await response.json()
+        console.error('Durum güncellenemedi:', errorData.error)
+        alert('Durum güncellenemedi: ' + errorData.error)
+      }
+    } catch (error) {
+      console.error('Durum güncelleme hatası:', error)
+      alert('Durum güncellenirken bir hata oluştu')
+    }
+  }
+
   const handleDownloadPdf = async (quotation: any) => {
     try {
       await downloadQuotationPdf({
@@ -262,15 +292,29 @@ export default function QuotationsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        quotation.status === QuotationStatus.DRAFT ? 'bg-gray-100 text-gray-800' :
-                        quotation.status === QuotationStatus.SENT ? 'bg-blue-100 text-blue-800' :
-                        quotation.status === QuotationStatus.ACCEPTED ? 'bg-green-100 text-green-800' :
-                        quotation.status === QuotationStatus.REJECTED ? 'bg-red-100 text-red-800' :
-                        'bg-orange-100 text-orange-800'
-                      }`}>
-                        {QuotationStatusLabels[quotation.status as QuotationStatus] || quotation.status}
-                      </span>
+                      <Select 
+                        value={quotation.status} 
+                        onValueChange={(value: QuotationStatus) => handleStatusUpdate(quotation.id, value)}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(QuotationStatus).map((statusValue) => (
+                            <SelectItem key={statusValue} value={statusValue}>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                statusValue === QuotationStatus.DRAFT ? 'bg-gray-100 text-gray-800' :
+                                statusValue === QuotationStatus.SENT ? 'bg-blue-100 text-blue-800' :
+                                statusValue === QuotationStatus.ACCEPTED ? 'bg-green-100 text-green-800' :
+                                statusValue === QuotationStatus.REJECTED ? 'bg-red-100 text-red-800' :
+                                'bg-orange-100 text-orange-800'
+                              }`}>
+                                {QuotationStatusLabels[statusValue]}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="font-mono">
                       {quotation.totalTL ? formatPrice(quotation.totalTL, 'TL') : '-'}
