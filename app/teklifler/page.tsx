@@ -109,10 +109,10 @@ export default function QuotationsPage() {
         quotation: quotation,
         companyInfo: {
           name: 'MAPOS',
-          address: 'İstanbul, Türkiye',
-          phone: '+90 212 000 00 00',
+          address: 'Yeşilove Mah. 2602. Sk. No:3/A Küçükçekmece / İSTANBUL',
+          phone: '+90 537 204 99 81',
           email: 'info@mapos.com',
-          website: 'www.mapos.com'
+          website: 'mapos.com.tr'
         },
         exchangeRate: quotation.exchangeRate || 40.0
       })

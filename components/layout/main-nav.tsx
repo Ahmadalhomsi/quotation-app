@@ -36,16 +36,6 @@ const navigation = [
     name: 'Müşteriler',
     href: '/musteriler',
     icon: Users
-  },
-  {
-    name: 'Döviz Kurları',
-    href: '/doviz',
-    icon: DollarSign
-  },
-  {
-    name: 'Ayarlar',
-    href: '/ayarlar',
-    icon: Settings
   }
 ]
 
