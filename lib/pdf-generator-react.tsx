@@ -2,7 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer'
 import { PdfExportData } from './types'
 
-// Register fonts for better Turkish character support
+// Register fonts
 Font.register({
   family: 'Open Sans',
   fonts: [
@@ -17,47 +17,47 @@ Font.register({
   ],
 })
 
-// Create styles
+// Create modern, compact styles
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
-    backgroundColor: '#FAFAFA',
-    padding: 25,
+    backgroundColor: '#FFFFFF',
+    padding: 20,
     fontFamily: 'Open Sans',
-    fontSize: 10,
+    fontSize: 9,
   },
   header: {
-    backgroundColor: '#FF6B35', // Simplified - no gradient support
-    padding: 20,
-    marginBottom: 20,
-    marginLeft: -25,
-    marginRight: -25,
-    marginTop: -25,
+    backgroundColor: '#FF6B35',
+    padding: 15,
+    marginBottom: 15,
+    marginHorizontal: -20,
+    marginTop: -20,
   },
   companyName: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   companyTagline: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#E8EEFF',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   contactInfo: {
-    fontSize: 9,
-    color: '#FFE5CC',
+    fontSize: 8,
+    color: '#E8EEFF',
     textAlign: 'right',
   },
   quotationInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    padding: 15,
+    marginBottom: 15,
+    padding: 12,
     backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#FF6B35',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 4,
   },
   quotationLeft: {
     flex: 1,
@@ -67,92 +67,94 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   quotationTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FF6B35',
-    marginBottom: 6,
-  },
-  quotationNumber: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#333333',
-    marginTop: 4,
-  },
-  quotationDate: {
-    fontSize: 10,
-    color: '#666666',
-    marginTop: 3,
-  },
-  statusTitle: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#FF6B35',
     marginBottom: 4,
   },
-  statusText: {
-    fontSize: 11,
+  quotationNumber: {
+    fontSize: 10,
     fontWeight: 'bold',
-    padding: 4,
+    color: '#374151',
+    marginTop: 3,
+  },
+  quotationDate: {
+    fontSize: 9,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  statusTitle: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#FF6B35',
+    marginBottom: 3,
+  },
+  statusText: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    padding: 3,
     backgroundColor: '#E8F5E8',
     color: '#2E7D32',
     textAlign: 'center',
+    borderRadius: 2,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FF6B35',
-    marginBottom: 10,
-    marginTop: 15,
-    paddingBottom: 3,
-    borderBottomWidth: 2,
+    marginBottom: 8,
+    marginTop: 12,
+    paddingBottom: 2,
+    borderBottomWidth: 1,
     borderBottomColor: '#FF6B35',
   },
   customerInfo: {
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: '#FFFFFF',
+    marginBottom: 15,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: '#E5E7EB',
+    borderRadius: 4,
   },
   customerTitle: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333333',
+    marginBottom: 6,
+    color: '#374151',
   },
   customerText: {
-    fontSize: 10,
-    marginBottom: 3,
-    color: '#555555',
+    fontSize: 9,
+    marginBottom: 2,
+    color: '#6B7280',
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: '#FF6B35',
-    padding: 10,
-    marginBottom: 2,
+    padding: 8,
+    marginBottom: 1,
   },
   tableHeaderText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 10,
+    padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    minHeight: 35,
+    minHeight: 30,
     alignItems: 'center',
   },
   tableRowEven: {
     backgroundColor: '#F8FAFC',
   },
   tableCell: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#374151',
   },
   tableCellBold: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#1F2937',
   },
@@ -172,85 +174,88 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   totalsSection: {
-    marginTop: 20,
+    marginTop: 15,
     alignItems: 'flex-end',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   totalsBox: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 2,
-    borderColor: '#FF6B35',
-    padding: 15,
-    width: 200,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    width: 180,
+    borderRadius: 4,
   },
   totalsTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FF6B35',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
   },
   totalsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
-    paddingVertical: 2,
+    marginBottom: 4,
+    paddingVertical: 1,
   },
   totalsLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#374151',
     fontWeight: 'bold',
   },
   totalsValue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
     color: '#1F2937',
   },
   exchangeRate: {
-    fontSize: 8,
+    fontSize: 7,
     color: '#6B7280',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 6,
   },
   termsSection: {
-    marginTop: 15,
-    marginBottom: 40,
+    marginTop: 12,
+    marginBottom: 30,
   },
   termsTitle: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 6,
     color: '#FF6B35',
   },
   termsText: {
-    fontSize: 10,
-    marginBottom: 10,
+    fontSize: 9,
+    marginBottom: 8,
     color: '#374151',
     backgroundColor: '#F9FAFB',
-    padding: 10,
+    padding: 8,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    borderRadius: 4,
   },
   descriptionText: {
-    fontSize: 10,
-    marginBottom: 15,
+    fontSize: 9,
+    marginBottom: 12,
     color: '#374151',
     backgroundColor: '#F9FAFB',
-    padding: 10,
+    padding: 8,
+    borderRadius: 4,
   },
   productType: {
-    fontSize: 8,
-    color: '#666666',
+    fontSize: 7,
+    color: '#6B7280',
   },
   footer: {
     position: 'absolute',
-    bottom: 20,
-    left: 25,
-    right: 25,
+    bottom: 15,
+    left: 20,
+    right: 20,
     textAlign: 'center',
-    fontSize: 8,
+    fontSize: 7,
     color: '#6B7280',
-    paddingTop: 8,
+    paddingTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
   },
@@ -390,13 +395,13 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
             <Text style={[styles.tableCell, styles.unitPrice]}>
               {item.currency === 'TL' 
-                ? `${formatPrice(item.unitPrice)} ₺`
+                ? `${formatPrice(item.unitPrice)} TL`
                 : `$${formatPrice(item.unitPrice)}`
               }
             </Text>
             <Text style={[styles.tableCellBold, styles.total]}>
               {item.currency === 'TL' 
-                ? `${formatPrice(item.totalPrice)} ₺`
+                ? `${formatPrice(item.totalPrice)} TL`
                 : `$${formatPrice(item.totalPrice)}`
               }
             </Text>
@@ -410,7 +415,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             {quotation.totalTL && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>Türk Lirası:</Text>
-                <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} ₺</Text>
+                <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} TL</Text>
               </View>
             )}
             {quotation.totalUSD && (
@@ -431,7 +436,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         {(quotation.terms || quotation.notes) && (
           <View style={styles.termsSection} wrap={false}>
             {quotation.terms && (
-              <View style={{ marginBottom: 10 }}>
+              <View style={{ marginBottom: 8 }}>
                 <Text style={styles.termsTitle}>ŞARTLAR</Text>
                 <Text style={styles.termsText}>{quotation.terms}</Text>
               </View>
