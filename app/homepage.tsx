@@ -5,6 +5,7 @@ import {
   FileText, 
   Package, 
   Users, 
+  TrendingUp,
   Plus,
   DollarSign
 } from 'lucide-react'

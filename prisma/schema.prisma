@@ -13,3 +13,127 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// Para birimi enum'ı
+enum Currency {
+  TL
+  USD
+}
+
+// Ürün tipi enum'ı
+enum ProductType {
+  SOFTWARE // Yazılım
+  HARDWARE // Donanım
+}
+
+// Teklif durumu enum'ı
+enum QuotationStatus {
+  DRAFT     // Taslak
+  SENT      // Gönderildi
+  ACCEPTED  // Kabul edildi
+  REJECTED  // Reddedildi
+  EXPIRED   // Süresi doldu
+}
+
+// Müşteri modeli
+model Customer {
+  id          String   @id @default(cuid())
+  companyName String   @map("company_name") // Şirket adı
+  contactName String   @map("contact_name") // İletişim kişisi
+  email       String   @unique
+  phone       String?
+  address     String?
+  taxNumber   String?  @map("tax_number") // Vergi numarası
+  taxOffice   String?  @map("tax_office") // Vergi dairesi
+  
+  quotations  Quotation[]
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("customers")
+}
+
+// Ürün modeli
+model Product {
+  id          String      @id @default(cuid())
+  name        String      // Ürün adı
+  description String?     // Açıklama
+  price       Decimal     @db.Decimal(10, 2) // Fiyat
+  currency    Currency    // Para birimi (TL/USD)
+  type        ProductType // Ürün tipi (Yazılım/Donanım)
+  sku         String?     @unique // Stok kodu
+  isActive    Boolean     @default(true) @map("is_active") // Aktif mi
+  
+  quotationItems QuotationItem[]
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("products")
+}
+
+// Teklif modeli
+model Quotation {
+  id              String          @id @default(cuid())
+  quotationNumber String          @unique @map("quotation_number") // Teklif numarası
+  title           String          // Teklif başlığı
+  description     String?         // Açıklama
+  status          QuotationStatus @default(DRAFT)
+  validUntil      DateTime        @map("valid_until") // Geçerlilik tarihi
+  
+  customerId      String          @map("customer_id")
+  customer        Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  items           QuotationItem[]
+  
+  // Toplam tutarlar (hesaplanmış)
+  totalTL         Decimal?        @db.Decimal(10, 2) @map("total_tl")
+  totalUSD        Decimal?        @db.Decimal(10, 2) @map("total_usd")
+  exchangeRate    Decimal?        @db.Decimal(10, 4) @map("exchange_rate") // Kullanılan döviz kuru
+  
+  // Notlar
+  terms           String?         // Şartlar ve koşullar
+  notes           String?         // Notlar
+  
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  
+  @@map("quotations")
+}
+
+// Teklif kalemi modeli
+model QuotationItem {
+  id          String    @id @default(cuid())
+  quantity    Int       // Miktar
+  unitPrice   Decimal   @db.Decimal(10, 2) @map("unit_price") // Birim fiyat
+  totalPrice  Decimal   @db.Decimal(10, 2) @map("total_price") // Toplam fiyat
+  currency    Currency  // Para birimi
+  
+  quotationId String    @map("quotation_id")
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  
+  productId   String    @map("product_id")
+  product     Product   @relation(fields: [productId], references: [id])
+  
+  // Snapshot of product details at the time of quotation
+  productName String    @map("product_name") // Ürün adı (o anki)
+  productType ProductType @map("product_type") // Ürün tipi (o anki)
+  
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  @@map("quotation_items")
+}
+
+// Döviz kuru geçmişi (opsiyonel, cache için)
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  rate      Decimal  @db.Decimal(10, 4) // USD/TL kuru
+  date      DateTime @unique @db.Date
+  source    String   @default("api") // Kaynak
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  @@map("exchange_rates")
+}
