@@ -34,32 +34,34 @@ export async function POST(request: NextRequest) {
     const body: CreateCustomerData = await request.json()
     
     // Validation
-    if (!body.companyName || !body.contactName || !body.email) {
+    if (!body.companyName || !body.contactName) {
       return NextResponse.json(
-        { error: 'Şirket adı, iletişim kişisi ve e-posta gereklidir' },
+        { error: 'Şirket adı ve iletişim kişisi gereklidir' },
         { status: 400 }
       )
     }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(body.email)) {
-      return NextResponse.json(
-        { error: 'Geçerli bir e-posta adresi giriniz' },
-        { status: 400 }
-      )
-    }
+    // Email validation (only if provided)
+    if (body.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(body.email)) {
+        return NextResponse.json(
+          { error: 'Geçerli bir e-posta adresi giriniz' },
+          { status: 400 }
+        )
+      }
 
-    // Check if email already exists
-    const existingCustomer = await prisma.customer.findUnique({
-      where: { email: body.email }
-    })
+      // Check if email already exists
+      const existingCustomer = await prisma.customer.findUnique({
+        where: { email: body.email }
+      })
 
-    if (existingCustomer) {
-      return NextResponse.json(
-        { error: 'Bu e-posta adresi zaten kullanılıyor' },
-        { status: 409 }
-      )
+      if (existingCustomer) {
+        return NextResponse.json(
+          { error: 'Bu e-posta adresi zaten kullanılıyor' },
+          { status: 409 }
+        )
+      }
     }
 
     const customer = await prisma.customer.create({

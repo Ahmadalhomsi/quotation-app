@@ -45,9 +45,8 @@ export default function NewCustomerPage() {
       newErrors.contactName = 'İletişim kişisi gereklidir'
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'E-posta adresi gereklidir'
-    } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
+    // Email validation (only if provided)
+    if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email)) {
       newErrors.email = 'Geçerli bir e-posta adresi girin'
     }
 
@@ -194,7 +193,7 @@ export default function NewCustomerPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="email">E-posta Adresi *</Label>
+                    <Label htmlFor="email">E-posta Adresi</Label>
                     <Input
                       id="email"
                       type="email"

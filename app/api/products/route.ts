@@ -64,10 +64,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if SKU already exists
-    if (body.sku) {
+    // Check if SKU already exists (only if SKU is provided and not empty)
+    if (body.sku && body.sku.trim()) {
       const existingProduct = await prisma.product.findUnique({
-        where: { sku: body.sku }
+        where: { sku: body.sku.trim() }
       })
 
       if (existingProduct) {
@@ -78,8 +78,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Clean up the data before saving
+    const productData = {
+      ...body,
+      sku: body.sku && body.sku.trim() ? body.sku.trim() : null
+    }
+
     const product = await prisma.product.create({
-      data: body
+      data: productData
     })
 
     return NextResponse.json({ product }, { status: 201 })

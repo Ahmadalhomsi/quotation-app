@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { 
   FileText, 
@@ -17,6 +18,25 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+
+interface DashboardStats {
+  totalQuotations: number
+  activeProducts: number
+  totalCustomers: number
+  monthlyQuotations: number
+  exchangeRate: number
+}
+
+interface RecentQuotation {
+  id: string
+  quotationNumber: string
+  title: string
+  customer: {
+    companyName: string
+  }
+  status: string
+  createdAt: string
+}
 
 const quickActions = [
   {
@@ -42,34 +62,69 @@ const quickActions = [
   }
 ]
 
-const stats = [
-  {
-    title: 'Toplam Teklifler',
-    value: '0',
-    description: 'Bu ay oluşturulan',
-    icon: FileText
-  },
-  {
-    title: 'Aktif Ürünler',
-    value: '0',
-    description: 'Katalog\'da mevcut',
-    icon: Package
-  },
-  {
-    title: 'Kayıtlı Müşteriler',
-    value: '0',
-    description: 'Sistemde kayıtlı',
-    icon: Users
-  },
-  {
-    title: 'Güncel Döviz Kuru',
-    value: '₺--',
-    description: 'USD/TL kuru',
-    icon: DollarSign
-  }
-]
-
 export default function HomePage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentQuotations, setRecentQuotations] = useState<RecentQuotation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch stats
+        const statsResponse = await fetch('/api/dashboard/stats')
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json()
+          setStats(statsData.stats)
+        }
+
+        // Fetch recent quotations
+        const quotationsResponse = await fetch('/api/quotations?limit=5')
+        if (quotationsResponse.ok) {
+          const quotationsData = await quotationsResponse.json()
+          setRecentQuotations(quotationsData.quotations.slice(0, 5))
+        }
+      } catch (error) {
+        console.error('Dashboard verileri alınırken hata:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  const statsCards = [
+    {
+      title: 'Toplam Teklifler',
+      value: stats?.totalQuotations?.toString() || '0',
+      description: 'Sistemde kayıtlı',
+      icon: FileText
+    },
+    {
+      title: 'Bu Ay',
+      value: stats?.monthlyQuotations?.toString() || '0',
+      description: 'Bu ay oluşturulan',
+      icon: FileText
+    },
+    {
+      title: 'Aktif Ürünler',
+      value: stats?.activeProducts?.toString() || '0',
+      description: 'Katalog\'da mevcut',
+      icon: Package
+    },
+    {
+      title: 'Kayıtlı Müşteriler',
+      value: stats?.totalCustomers?.toString() || '0',
+      description: 'Sistemde kayıtlı',
+      icon: Users
+    },
+    {
+      title: 'Güncel Döviz Kuru',
+      value: stats?.exchangeRate ? `₺${stats.exchangeRate.toFixed(2)}` : '₺--',
+      description: 'USD/TL kuru',
+      icon: DollarSign
+    }
+  ]
   return (
     <div className="space-y-8">
       {/* Başlık */}
@@ -83,8 +138,8 @@ export default function HomePage() {
       </div>
 
       {/* İstatistikler */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {statsCards.map((stat) => {
           const Icon = stat.icon
           return (
             <Card key={stat.title}>
@@ -154,11 +209,49 @@ export default function HomePage() {
         </div>
         <Card>
           <CardContent className="p-6">
-            <div className="text-center text-muted-foreground">
-              <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>Henüz teklif bulunmuyor.</p>
-              <p className="text-sm">İlk teklifinizi oluşturmak için yukarıdaki düğmeyi kullanın.</p>
-            </div>
+            {isLoading ? (
+              <div className="text-center text-muted-foreground">
+                <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <p>Yükleniyor...</p>
+              </div>
+            ) : recentQuotations.length > 0 ? (
+              <div className="space-y-4">
+                {recentQuotations.map((quotation) => (
+                  <div key={quotation.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <h4 className="font-medium">{quotation.title}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {quotation.customer.companyName} • {quotation.quotationNumber}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        quotation.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-800' :
+                        quotation.status === 'SENT' ? 'bg-blue-100 text-blue-800' :
+                        quotation.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                        quotation.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {quotation.status === 'DRAFT' ? 'Taslak' :
+                         quotation.status === 'SENT' ? 'Gönderildi' :
+                         quotation.status === 'ACCEPTED' ? 'Kabul Edildi' :
+                         quotation.status === 'REJECTED' ? 'Reddedildi' :
+                         quotation.status}
+                      </span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(quotation.createdAt).toLocaleDateString('tr-TR')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground">
+                <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                <p>Henüz teklif bulunmuyor.</p>
+                <p className="text-sm">İlk teklifinizi oluşturmak için yukarıdaki düğmeyi kullanın.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
