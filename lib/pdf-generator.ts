@@ -64,36 +64,36 @@ export class PdfGenerator {
 
     // HEADER SECTION
     pdf.setFillColor(255, 140, 0) // Turuncu renk
-    pdf.rect(0, 0, pageWidth, 50, 'F')
+    pdf.rect(0, 0, pageWidth, 40, 'F')
     
     // Şirket adı - büyük ve beyaz
     pdf.setTextColor(255, 255, 255)
-    pdf.setFontSize(28)
+    pdf.setFontSize(22)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('MAPOS', margin, 25)
+    pdf.text('MAPOS', margin, 20)
     
     // Alt başlık
-    pdf.setFontSize(12)
+    pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
-    pdf.text('POS Sistemleri ve Teknoloji Cozumleri', margin, 35)
+    pdf.text('POS Sistemleri ve Teknoloji Cozumleri', margin, 28)
     
     // İletişim bilgileri - sağ üst
-    pdf.setFontSize(9)
+    pdf.setFontSize(8)
     pdf.setTextColor(255, 255, 255)
-    pdf.text('+90 (555) 123-4567', pageWidth - margin - 50, 20, { align: 'right' })
-    pdf.text('info@mapos.com.tr', pageWidth - margin - 50, 28, { align: 'right' })
-    pdf.text('www.mapos.com.tr', pageWidth - margin - 50, 36, { align: 'right' })
+    pdf.text('+90 (555) 123-4567', pageWidth - margin - 50, 15, { align: 'right' })
+    pdf.text('info@mapos.com.tr', pageWidth - margin - 50, 22, { align: 'right' })
+    pdf.text('www.mapos.com.tr', pageWidth - margin - 50, 29, { align: 'right' })
 
-    yPosition = 70
+    yPosition = 55
 
     // TEKLIF BILGILERI
     pdf.setFillColor(248, 249, 250)
-    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 40, 'F')
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 35, 'F')
     
     pdf.setTextColor(255, 140, 0)
-    pdf.setFontSize(18)
+    pdf.setFontSize(16)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('TEKLIF', margin + 10, yPosition + 15)
+    pdf.text('Teklif', margin + 10, yPosition + 12)
     
     pdf.setTextColor(0, 0, 0)
     pdf.setFontSize(12)
@@ -113,7 +113,7 @@ export class PdfGenerator {
     const statusText = this.getStatusText(quotation.status)
     pdf.text(statusText, pageWidth - margin - 60, yPosition + 25)
 
-    yPosition += 50
+    yPosition += 45
 
     // MUSTERI BILGILERI
     pdf.setTextColor(255, 140, 0)

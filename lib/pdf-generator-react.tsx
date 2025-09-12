@@ -21,41 +21,55 @@ Font.register({
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
+    backgroundColor: '#FAFAFA',
+    padding: 25,
     fontFamily: 'Open Sans',
+    fontSize: 10,
   },
   header: {
-    backgroundColor: '#FF8C00',
+    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     padding: 20,
     marginBottom: 20,
-    marginLeft: -20,
-    marginRight: -20,
-    marginTop: -20,
+    marginLeft: -25,
+    marginRight: -25,
+    marginTop: -25,
+    borderRadius: 0,
+  },
+  headerGradient: {
+    backgroundColor: '#667eea',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
   companyName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 5,
+    marginBottom: 4,
+    letterSpacing: 0.5,
   },
   companyTagline: {
-    fontSize: 12,
-    color: '#FFFFFF',
+    fontSize: 11,
+    color: '#E8EEFF',
     marginBottom: 10,
+    fontStyle: 'italic',
   },
   contactInfo: {
     fontSize: 9,
-    color: '#FFFFFF',
+    color: '#E8EEFF',
     textAlign: 'right',
+    lineHeight: 1.3,
   },
   quotationInfo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    border: '2px solid #667eea',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   quotationLeft: {
     flex: 1,
@@ -64,131 +78,203 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'right',
   },
-  sectionTitle: {
-    fontSize: 16,
+  quotationTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#FF8C00',
+    color: '#667eea',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  quotationNumber: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginTop: 4,
+  },
+  quotationDate: {
+    fontSize: 10,
+    color: '#666666',
+    marginTop: 3,
+  },
+  statusTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#667eea',
+    marginBottom: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: '#E8F5E8',
+    color: '#2E7D32',
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#667eea',
     marginBottom: 10,
     marginTop: 15,
+    paddingBottom: 3,
+    borderBottomWidth: 2,
+    borderBottomColor: '#667eea',
+    letterSpacing: 0.3,
   },
   customerInfo: {
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    border: '1px solid #E0E7FF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   customerTitle: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8,
+    color: '#333333',
   },
   customerText: {
     fontSize: 10,
-    marginBottom: 2,
+    marginBottom: 3,
+    color: '#555555',
+    lineHeight: 1.3,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#FF8C00',
-    padding: 8,
-    marginBottom: 5,
+    backgroundColor: '#667eea',
+    padding: 10,
+    marginBottom: 2,
+    borderRadius: 6,
   },
   tableHeaderText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#FFFFFF',
+    letterSpacing: 0.2,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 8,
+    padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E5E7EB',
+    minHeight: 35,
+    alignItems: 'center',
   },
   tableRowEven: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F8FAFC',
   },
   tableCell: {
     fontSize: 10,
+    color: '#374151',
+    lineHeight: 1.2,
   },
   tableCellBold: {
     fontSize: 10,
     fontWeight: 'bold',
+    color: '#1F2937',
+    lineHeight: 1.2,
   },
   productName: {
-    flex: 3,
+    flex: 3.5,
   },
   quantity: {
     flex: 1,
     textAlign: 'center',
   },
   unitPrice: {
-    flex: 1.5,
+    flex: 2,
     textAlign: 'right',
   },
-  currency: {
-    flex: 1,
-    textAlign: 'center',
-  },
   total: {
-    flex: 1.5,
+    flex: 2,
     textAlign: 'right',
   },
   totalsSection: {
     marginTop: 20,
     alignItems: 'flex-end',
+    marginBottom: 20,
   },
   totalsBox: {
-    backgroundColor: '#F8F9FA',
-    border: '2px solid #FF8C00',
+    backgroundColor: '#FFFFFF',
+    border: '2px solid #667eea',
     padding: 15,
     width: 200,
-    borderRadius: 5,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   totalsTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FF8C00',
-    marginBottom: 10,
+    color: '#667eea',
+    marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   totalsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 5,
+    marginBottom: 6,
+    paddingVertical: 2,
   },
   totalsLabel: {
-    fontSize: 10,
+    fontSize: 11,
+    color: '#374151',
+    fontWeight: 'bold',
   },
   totalsValue: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
+    color: '#1F2937',
   },
   exchangeRate: {
     fontSize: 8,
-    color: '#666666',
+    color: '#6B7280',
     textAlign: 'center',
-    marginTop: 5,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   termsSection: {
-    marginTop: 30,
+    marginTop: 15,
+    marginBottom: 40,
   },
   termsTitle: {
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: '#667eea',
+    letterSpacing: 0.2,
   },
   termsText: {
     fontSize: 10,
     lineHeight: 1.4,
     marginBottom: 10,
+    color: '#374151',
+    backgroundColor: '#F9FAFB',
+    padding: 10,
+    borderRadius: 6,
+    border: '1px solid #E5E7EB',
   },
   footer: {
     position: 'absolute',
     bottom: 20,
-    left: 20,
-    right: 20,
+    left: 25,
+    right: 25,
     textAlign: 'center',
     fontSize: 8,
-    color: '#666666',
+    color: '#6B7280',
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    lineHeight: 1.3,
   },
 })
 
@@ -234,26 +320,26 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         {/* Quotation Info */}
         <View style={styles.quotationInfo}>
           <View style={styles.quotationLeft}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FF8C00' }}>
+            <Text style={styles.quotationTitle}>
               TEKLİF
             </Text>
-            <Text style={{ fontSize: 14, marginTop: 5 }}>
+            <Text style={styles.quotationNumber}>
               No: {quotation.quotationNumber}
             </Text>
-            <Text style={{ fontSize: 10, marginTop: 5 }}>
+            <Text style={styles.quotationDate}>
               Tarih: {formatDate(quotation.createdAt)}
             </Text>
             {quotation.validUntil && (
-              <Text style={{ fontSize: 10, marginTop: 2 }}>
+              <Text style={styles.quotationDate}>
                 Geçerlilik: {formatDate(quotation.validUntil)}
               </Text>
             )}
           </View>
           <View style={styles.quotationRight}>
-            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
+            <Text style={styles.statusTitle}>
               DURUM
             </Text>
-            <Text style={{ fontSize: 10, marginTop: 5 }}>
+            <Text style={styles.statusText}>
               {quotation.status === 'DRAFT' && 'Taslak'}
               {quotation.status === 'SENT' && 'Gönderildi'}
               {quotation.status === 'ACCEPTED' && 'Kabul Edildi'}
@@ -285,7 +371,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         {/* Quotation Title and Description */}
         <Text style={styles.sectionTitle}>{quotation.title}</Text>
         {quotation.description && (
-          <Text style={{ fontSize: 10, marginBottom: 15, lineHeight: 1.4 }}>
+          <Text style={{ fontSize: 10, marginBottom: 15, lineHeight: 1.4, color: '#374151', backgroundColor: '#F9FAFB', padding: 10, borderRadius: 6 }}>
             {quotation.description}
           </Text>
         )}
@@ -298,7 +384,6 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
           <Text style={[styles.tableHeaderText, styles.productName]}>ÜRÜN / HİZMET</Text>
           <Text style={[styles.tableHeaderText, styles.quantity]}>MİKTAR</Text>
           <Text style={[styles.tableHeaderText, styles.unitPrice]}>BİRİM FİYAT</Text>
-          <Text style={[styles.tableHeaderText, styles.currency]}>P.B.</Text>
           <Text style={[styles.tableHeaderText, styles.total]}>TOPLAM</Text>
         </View>
 
@@ -319,9 +404,11 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             </View>
             <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
             <Text style={[styles.tableCell, styles.unitPrice]}>
-              {formatPrice(item.unitPrice)}
+              {item.currency === 'TL' 
+                ? `${formatPrice(item.unitPrice)} ₺`
+                : `$${formatPrice(item.unitPrice)}`
+              }
             </Text>
-            <Text style={[styles.tableCell, styles.currency]}>{item.currency}</Text>
             <Text style={[styles.tableCellBold, styles.total]}>
               {item.currency === 'TL' 
                 ? `${formatPrice(item.totalPrice)} ₺`
@@ -332,24 +419,24 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         ))}
 
         {/* Totals */}
-        <View style={styles.totalsSection}>
+        <View style={styles.totalsSection} wrap={false}>
           <View style={styles.totalsBox}>
             <Text style={styles.totalsTitle}>TOPLAM TUTAR</Text>
             {quotation.totalTL && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>TL:</Text>
+                <Text style={styles.totalsLabel}>Türk Lirası:</Text>
                 <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} ₺</Text>
               </View>
             )}
             {quotation.totalUSD && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>USD:</Text>
+                <Text style={styles.totalsLabel}>ABD Doları:</Text>
                 <Text style={styles.totalsValue}>${formatPrice(quotation.totalUSD)}</Text>
               </View>
             )}
             {exchangeRate && quotation.totalUSD && (
               <Text style={styles.exchangeRate}>
-                Döviz Kuru: {exchangeRate.toFixed(4)}
+                Döviz Kuru: {exchangeRate.toFixed(4)} TL/USD
               </Text>
             )}
           </View>
@@ -357,9 +444,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
 
         {/* Terms and Notes */}
         {(quotation.terms || quotation.notes) && (
-          <View style={styles.termsSection}>
+          <View style={styles.termsSection} wrap={false}>
             {quotation.terms && (
-              <View>
+              <View style={{ marginBottom: 10 }}>
                 <Text style={styles.termsTitle}>ŞARTLAR</Text>
                 <Text style={styles.termsText}>{quotation.terms}</Text>
               </View>
@@ -408,10 +495,9 @@ export class ReactPdfGenerator {
 }
 
 // Simple function for direct PDF generation (compatibility with existing code)
-export async function generatePDF(quotationData: any): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function generatePDF(quotationData: PdfExportData['quotation']): Promise<void> {
   const data: PdfExportData = {
-    quotation: quotationData as any, // Type assertion for compatibility
+    quotation: quotationData,
     companyInfo: {
       name: 'MAPOS',
       address: 'İstanbul, Türkiye',
@@ -421,7 +507,7 @@ export async function generatePDF(quotationData: any): Promise<void> {
       taxNumber: '1234567890',
       taxOffice: 'Kadıköy'
     },
-    exchangeRate: quotationData.exchangeRate || 30.0
+    exchangeRate: 30.0
   }
   
   await ReactPdfGenerator.downloadQuotationPdf(data, `teklif-${quotationData.quotationNumber}.pdf`)

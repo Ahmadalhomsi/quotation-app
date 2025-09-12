@@ -176,9 +176,9 @@ export default function QuotationDetailPage() {
         companyInfo: {
           name: 'MAPOS',
           address: 'İstanbul, Türkiye',
-          phone: '+90 212 000 00 00',
-          email: 'info@mapos.com',
-          website: 'www.mapos.com'
+          phone: '+90 537 204 99 81',
+          email: 'info@mapos.com.tr',
+          website: 'www.mapos.com.tr'
         },
         exchangeRate: quotation.exchangeRate || 30.0
       })
