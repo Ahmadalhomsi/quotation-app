@@ -14,6 +14,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 const navigation = [
   {
@@ -139,6 +140,7 @@ export function MainNav() {
               <span className="font-bold">MAPOS</span>
             </Link>
           </div>
+          <ThemeToggle />
         </div>
       </div>
     </header>
