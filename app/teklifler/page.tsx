@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState } from 'react'
@@ -40,6 +41,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { QuotationStatus, QuotationStatusLabels } from '@/lib/types'
+import { downloadQuotationPdf } from '@/lib/pdf-generator'
 
 // Mock data - bu gerçek uygulamada API'den gelecek
 const mockQuotations = [
@@ -47,31 +49,75 @@ const mockQuotations = [
     id: '1',
     quotationNumber: 'TKL-2024-001',
     title: 'POS Sistemi Teklifi',
+    description: 'Kapsamlı POS sistemi çözümü',
     customer: {
       id: '1',
       companyName: 'ABC Teknoloji A.Ş.',
-      contactName: 'Ahmet Yılmaz'
+      contactName: 'Ahmet Yılmaz',
+      email: 'ahmet@abcteknoloji.com',
+      phone: '+90 212 123 45 67'
     },
     status: QuotationStatus.SENT,
     totalTL: 15750.00,
     totalUSD: 525.00,
     validUntil: new Date('2024-02-15'),
-    createdAt: new Date('2024-01-15')
+    createdAt: new Date('2024-01-15'),
+    items: [
+      {
+        id: '1',
+        productId: '1',
+        productName: 'MAPOS Pro POS Yazılımı',
+        productType: 'SOFTWARE',
+        quantity: 1,
+        unitPrice: 2500,
+        totalPrice: 2500,
+        currency: 'TL'
+      },
+      {
+        id: '2',
+        productId: '2',
+        productName: 'Touch Screen Monitor 15"',
+        productType: 'HARDWARE',
+        quantity: 2,
+        unitPrice: 299,
+        totalPrice: 598,
+        currency: 'USD'
+      }
+    ],
+    terms: 'Ödeme şartları: 30 gün vadeli',
+    notes: 'Kurulum desteği dahildir'
   },
   {
     id: '2',
     quotationNumber: 'TKL-2024-002',
     title: 'Donanım Güncelleme Teklifi',
+    description: 'Mevcut sistemlerin güncellenmesi',
     customer: {
       id: '2',
       companyName: 'XYZ Perakende Ltd.',
-      contactName: 'Ayşe Demir'
+      contactName: 'Ayşe Demir',
+      email: 'ayse@xyzperakende.com',
+      phone: '+90 312 987 65 43'
     },
     status: QuotationStatus.DRAFT,
     totalTL: 8900.00,
     totalUSD: 296.67,
     validUntil: new Date('2024-02-20'),
-    createdAt: new Date('2024-01-18')
+    createdAt: new Date('2024-01-18'),
+    items: [
+      {
+        id: '3',
+        productId: '2',
+        productName: 'Touch Screen Monitor 15"',
+        productType: 'HARDWARE',
+        quantity: 3,
+        unitPrice: 299,
+        totalPrice: 897,
+        currency: 'USD'
+      }
+    ],
+    terms: 'Ödeme şartları: Peşin ödeme',
+    notes: 'Hızlı teslimat gerekli'
   }
 ]
 
@@ -86,6 +132,25 @@ export default function QuotationsPage() {
     })
     const formattedPrice = formatter.format(price)
     return currency === 'TL' ? `${formattedPrice} ₺` : `$${formattedPrice}`
+  }
+
+  const handleDownloadPdf = async (quotation: typeof mockQuotations[0]) => {
+    try {
+      await downloadQuotationPdf({
+        quotation: quotation as any,
+        companyInfo: {
+          name: 'MAPOS',
+          address: 'İstanbul, Türkiye',
+          phone: '+90 212 000 00 00',
+          email: 'info@mapos.com',
+          website: 'www.mapos.com'
+        },
+        exchangeRate: 30.5
+      })
+    } catch (error) {
+      console.error('PDF indirme hatası:', error)
+      alert('PDF indirilemedi. Lütfen tekrar deneyin.')
+    }
   }
 
   const getStatusColor = (status: QuotationStatus) => {
@@ -116,7 +181,7 @@ export default function QuotationsPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
       {/* Başlık */}
       <div className="flex items-center justify-between">
         <div>
@@ -325,7 +390,11 @@ export default function QuotationsPage() {
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDownloadPdf(quotation)}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
