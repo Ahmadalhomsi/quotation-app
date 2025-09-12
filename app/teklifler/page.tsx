@@ -39,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { QuotationStatus, QuotationStatusLabels } from '@/lib/types'
+import { formatPrice, calculateTotal } from '@/lib/format'
 import { downloadQuotationPdf } from '@/lib/pdf-generator'
 
 export default function QuotationsPage() {
@@ -70,16 +71,6 @@ export default function QuotationsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const formatPrice = (price: number, currency: 'TL' | 'USD') => {
-    const formatter = new Intl.NumberFormat('tr-TR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
-    const formattedPrice = formatter.format(price)
-    // Standardize all currency formatting - TL symbol before amount
-    return currency === 'TL' ? `₺${formattedPrice}` : `$${formattedPrice}`
   }
 
   const handleDownloadPdf = async (quotation: any) => {
@@ -179,7 +170,7 @@ export default function QuotationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPrice(quotations.reduce((sum: number, q: any) => sum + (q.totalTL || 0), 0), 'TL')}
+              {formatPrice(calculateTotal(quotations, 'totalTL'), 'TL')}
             </div>
             <p className="text-xs text-muted-foreground">
               Türk Lirası cinsinden

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { currencyService } from '@/lib/currency'
 
 export async function GET() {
   try {
@@ -7,7 +8,8 @@ export async function GET() {
       totalQuotations,
       activeProducts,
       totalCustomers,
-      monthlyQuotations
+      monthlyQuotations,
+      exchangeRate
     ] = await Promise.all([
       prisma.quotation.count(),
       prisma.product.count({
@@ -20,11 +22,9 @@ export async function GET() {
             gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
           }
         }
-      })
+      }),
+      currencyService.getUsdToTryRate()
     ])
-
-    // Get current USD/TL exchange rate (you can implement a real API call here)
-    const exchangeRate = 34.50 // Placeholder - you can integrate with a real exchange rate API
 
     return NextResponse.json({
       stats: {
