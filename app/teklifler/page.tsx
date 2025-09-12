@@ -111,7 +111,7 @@ export default function QuotationsPage() {
           name: 'MAPOS',
           address: 'Yeşilove Mah. 2602. Sk. No:3/A Küçükçekmece / İSTANBUL',
           phone: '+90 537 204 99 81',
-          email: 'info@mapos.com',
+          email: 'info@mapos.com.tr',
           website: 'mapos.com.tr'
         },
         exchangeRate: quotation.exchangeRate || 40.0
