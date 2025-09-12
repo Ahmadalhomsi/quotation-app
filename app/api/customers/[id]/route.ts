@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '../../../generated/prisma'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // GET /api/customers/[id] - Belirli bir müşteriyi getir
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 FIXED: params is a Promise!
 ) {
   try {
+    const resolvedParams = await params
+
     const customer = await prisma.customer.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         quotations: {
           orderBy: { createdAt: 'desc' },
@@ -39,14 +40,15 @@ export async function GET(
 // PUT /api/customers/[id] - Müşteriyi güncelle
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 FIXED: params is a Promise!
 ) {
   try {
+    const resolvedParams = await params
     const body = await request.json()
-    
+
     // Check if customer exists
     const existingCustomer = await prisma.customer.findUnique({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     if (!existingCustomer) {
@@ -71,7 +73,7 @@ export async function PUT(
     }
 
     const customer = await prisma.customer.update({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       data: body
     })
 
@@ -88,12 +90,14 @@ export async function PUT(
 // DELETE /api/customers/[id] - Müşteriyi sil
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 FIXED: params is a Promise!
 ) {
   try {
+    const resolvedParams = await params
+
     // Check if customer exists
     const existingCustomer = await prisma.customer.findUnique({
-      where: { id: params.id },
+      where: { id: resolvedParams.id },
       include: {
         _count: { select: { quotations: true } }
       }
@@ -115,7 +119,7 @@ export async function DELETE(
     }
 
     await prisma.customer.delete({
-      where: { id: params.id }
+      where: { id: resolvedParams.id }
     })
 
     return NextResponse.json({ message: 'Müşteri başarıyla silindi' })

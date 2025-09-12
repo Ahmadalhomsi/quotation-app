@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, QuotationStatus } from '../../generated/prisma'
+import { QuotationStatus } from '../../generated/prisma'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // GET /api/quotations - Tüm teklifleri listele
 export async function GET(request: NextRequest) {

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '../../../generated/prisma'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 FIXED: params is a Promise!
 ) {
   try {
+    const resolvedParams = await params
     const quotation = await prisma.quotation.findUnique({
       where: {
-        id: params.id
+        id: resolvedParams.id
       },
       include: {
         customer: true,
@@ -41,20 +41,22 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 👈 FIXED: params is a Promise!
 ) {
   try {
+    const resolvedParams = await params
+
     // First delete related items
     await prisma.quotationItem.deleteMany({
       where: {
-        quotationId: params.id
+        quotationId: resolvedParams.id
       }
     })
 
     // Then delete the quotation
     await prisma.quotation.delete({
       where: {
-        id: params.id
+        id: resolvedParams.id
       }
     })
 

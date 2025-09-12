@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, ProductType } from '../../generated/prisma'
+import { ProductType } from '../../generated/prisma'
 import { CreateProductData } from '@/lib/types'
 
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
+
 
 // GET /api/products - Tüm ürünleri listele
 export async function GET(request: NextRequest) {
