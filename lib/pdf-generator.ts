@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { jsPDF } from 'jspdf'
 import { PdfExportData } from './types'
+import { ReactPdfGenerator } from './pdf-generator-react'
+
+// Legacy jsPDF implementation kept for fallback
+import { jsPDF } from 'jspdf'
 
 export class PdfGenerator {
   private static instance: PdfGenerator
@@ -13,9 +16,40 @@ export class PdfGenerator {
   }
 
   /**
-   * Teklif PDF'i oluşturur - Gelişmiş tasarım
+   * Use React-PDF for better Turkish character support
    */
   async generateQuotationPdf(data: PdfExportData): Promise<Blob> {
+    try {
+      return await ReactPdfGenerator.generateQuotationPdf(data)
+    } catch (error) {
+      console.warn('React-PDF failed, falling back to jsPDF:', error)
+      return this.generateLegacyPdf(data)
+    }
+  }
+
+  async downloadQuotationPdf(data: PdfExportData, filename: string = 'teklif.pdf'): Promise<void> {
+    try {
+      await ReactPdfGenerator.downloadQuotationPdf(data, filename)
+    } catch (error) {
+      console.warn('React-PDF failed, falling back to jsPDF:', error)
+      const blob = await this.generateLegacyPdf(data)
+      
+      // Create download link
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+  }
+
+  /**
+   * Legacy jsPDF implementation (fallback)
+   */
+  private async generateLegacyPdf(data: PdfExportData): Promise<Blob> {
     const { quotation, exchangeRate } = data
     
     // A4 PDF oluştur
@@ -28,11 +62,7 @@ export class PdfGenerator {
     
     let yPosition = 20
 
-    // =================
     // HEADER SECTION
-    // =================
-    
-    // Şirket logosu alanı (turuncu/siyah tema)
     pdf.setFillColor(255, 140, 0) // Turuncu renk
     pdf.rect(0, 0, pageWidth, 50, 'F')
     
@@ -45,108 +75,107 @@ export class PdfGenerator {
     // Alt başlık
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'normal')
-    pdf.text('POS Sistemleri ve Teknoloji Çözümleri', margin, 35)
+    pdf.text('POS Sistemleri ve Teknoloji Cozumleri', margin, 35)
     
     // İletişim bilgileri - sağ üst
     pdf.setFontSize(9)
     pdf.setTextColor(255, 255, 255)
-    const contactX = pageWidth - margin
-    pdf.text('info@mapos.com', contactX, 20, { align: 'right' })
-    pdf.text('+90 212 000 00 00', contactX, 28, { align: 'right' })
-    pdf.text('www.mapos.com', contactX, 36, { align: 'right' })
-    
-    // Rengi siyaha döndür
-    pdf.setTextColor(0, 0, 0)
+    pdf.text('+90 (555) 123-4567', pageWidth - margin - 50, 20, { align: 'right' })
+    pdf.text('info@mapos.com.tr', pageWidth - margin - 50, 28, { align: 'right' })
+    pdf.text('www.mapos.com.tr', pageWidth - margin - 50, 36, { align: 'right' })
+
     yPosition = 70
 
-    // =================
-    // DOCUMENT INFO
-    // =================
-    
-    // Sol taraf - Müşteri bilgileri
+    // TEKLIF BILGILERI
     pdf.setFillColor(248, 249, 250)
-    pdf.rect(margin, yPosition, (pageWidth - 3 * margin) / 2, 70, 'F')
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 40, 'F')
     
-    pdf.setFontSize(14)
-    pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(255, 140, 0) // Turuncu renk
-    pdf.text('FATURA ADRESİ', margin + 10, yPosition + 15)
-    
-    pdf.setTextColor(0, 0, 0)
-    pdf.setFontSize(10)
-    pdf.setFont('helvetica', 'bold')
-    pdf.text(quotation.customer.companyName, margin + 10, yPosition + 25)
-    
-    pdf.setFont('helvetica', 'normal')
-    pdf.text(quotation.customer.contactName, margin + 10, yPosition + 33)
-    pdf.text(quotation.customer.email, margin + 10, yPosition + 41)
-    if (quotation.customer.phone) {
-      pdf.text(quotation.customer.phone, margin + 10, yPosition + 49)
-    }
-    if (quotation.customer.address) {
-      const addressLines = pdf.splitTextToSize(quotation.customer.address, 80)
-      pdf.text(addressLines, margin + 10, yPosition + 57)
-    }
-
-    // Sağ taraf - Teklif bilgileri
-    const rightBoxX = margin + (pageWidth - 3 * margin) / 2 + 10
-    pdf.setFillColor(0, 0, 0) // Siyah arka plan
-    pdf.rect(rightBoxX, yPosition, (pageWidth - 3 * margin) / 2, 70, 'F')
-    
-    pdf.setTextColor(255, 255, 255)
+    pdf.setTextColor(255, 140, 0)
     pdf.setFontSize(18)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('TEKLİF', rightBoxX + 10, yPosition + 20)
+    pdf.text('TEKLIF', margin + 10, yPosition + 15)
+    
+    pdf.setTextColor(0, 0, 0)
+    pdf.setFontSize(12)
+    pdf.text(`No: ${quotation.quotationNumber}`, margin + 10, yPosition + 25)
+    
+    pdf.setFontSize(10)
+    const createdDate = new Date(quotation.createdAt).toLocaleDateString('tr-TR')
+    pdf.text(`Tarih: ${createdDate}`, margin + 10, yPosition + 32)
+
+    // Sağ taraf - durum
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('DURUM', pageWidth - margin - 60, yPosition + 15)
     
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
-    pdf.text(`No: ${quotation.quotationNumber}`, rightBoxX + 10, yPosition + 35)
-    pdf.text(`Tarih: ${new Date(quotation.createdAt).toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 43)
-    pdf.text(`Geçerlilik: ${new Date(quotation.validUntil).toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 51)
-    
-    // Durumu göster
     const statusText = this.getStatusText(quotation.status)
-    pdf.setFontSize(8)
-    pdf.text(`Durum: ${statusText}`, rightBoxX + 10, yPosition + 59)
-    
-    pdf.setTextColor(0, 0, 0) // Rengi siyaha döndür
-    yPosition += 90
+    pdf.text(statusText, pageWidth - margin - 60, yPosition + 25)
 
-    // =================
-    // BAŞLIK VE AÇIKLAMA
-    // =================
-    
-    pdf.setFontSize(16)
+    yPosition += 50
+
+    // MUSTERI BILGILERI
+    pdf.setTextColor(255, 140, 0)
+    pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(255, 140, 0) // Turuncu başlık
-    pdf.text(quotation.title, margin, yPosition)
+    pdf.text('MUSTERI BILGILERI', margin, yPosition)
     
-    if (quotation.description) {
-      yPosition += 10
-      pdf.setFontSize(10)
-      pdf.setFont('helvetica', 'normal')
-      pdf.setTextColor(100, 100, 100)
-      const descLines = pdf.splitTextToSize(quotation.description, pageWidth - 2 * margin)
-      pdf.text(descLines, margin, yPosition)
-      yPosition += descLines.length * 5
-    }
+    yPosition += 10
+    
+    pdf.setFillColor(248, 249, 250)
+    pdf.rect(margin, yPosition, pageWidth - 2 * margin, 35, 'F')
     
     pdf.setTextColor(0, 0, 0)
-    yPosition += 20
-
-    // =================
-    // ÜRÜNLER TABLOSU
-    // =================
+    pdf.setFontSize(12)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text(quotation.customer.companyName, margin + 10, yPosition + 10)
     
-    // Tablo başlığı
-    pdf.setFillColor(0, 0, 0) // Siyah başlık
+    pdf.setFontSize(10)
+    pdf.setFont('helvetica', 'normal')
+    pdf.text(`Yetkili: ${quotation.customer.contactName}`, margin + 10, yPosition + 18)
+    pdf.text(`E-posta: ${quotation.customer.email}`, margin + 10, yPosition + 25)
+    
+    if (quotation.customer.phone) {
+      pdf.text(`Tel: ${quotation.customer.phone}`, pageWidth - margin - 80, yPosition + 18)
+    }
+
+    yPosition += 45
+
+    // TEKLIF BASLIGI VE ACIKLAMA
+    if (quotation.title) {
+      pdf.setTextColor(255, 140, 0)
+      pdf.setFontSize(14)
+      pdf.setFont('helvetica', 'bold')
+      pdf.text(quotation.title, margin, yPosition)
+      yPosition += 15
+    }
+    
+    if (quotation.description) {
+      pdf.setTextColor(0, 0, 0)
+      pdf.setFontSize(10)
+      pdf.setFont('helvetica', 'normal')
+      const descLines = pdf.splitTextToSize(quotation.description, pageWidth - 2 * margin)
+      pdf.text(descLines, margin, yPosition)
+      yPosition += descLines.length * 5 + 10
+    }
+
+    // URUNLER TABLOSU
+    pdf.setTextColor(255, 140, 0)
+    pdf.setFontSize(14)
+    pdf.setFont('helvetica', 'bold')
+    pdf.text('URUNLER VE HIZMETLER', margin, yPosition)
+    
+    yPosition += 15
+
+    // Tablo başlıkları
+    pdf.setFillColor(255, 140, 0)
     pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
     
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'bold')
     
-    // Kolonlar
     const col1X = margin + 5
     const col2X = margin + 90
     const col3X = margin + 115
@@ -177,13 +206,13 @@ export class PdfGenerator {
 
       pdf.setFontSize(10)
       pdf.setFont('helvetica', 'bold')
-      pdf.text(item.productName, col1X, yPosition + 8)
+      pdf.text(item.product.name, col1X, yPosition + 8)
       
       // Ürün tipi
       pdf.setFontSize(8)
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(100, 100, 100)
-      const typeText = item.productType === 'SOFTWARE' ? 'Yazılım' : 'Donanım'
+      const typeText = item.product.type === 'SOFTWARE' ? 'Yazilim' : 'Donanim'
       pdf.text(typeText, col1X, yPosition + 15)
       
       pdf.setTextColor(0, 0, 0)
@@ -202,10 +231,7 @@ export class PdfGenerator {
       yPosition += 20
     })
 
-    // =================
     // TOPLAM TUTARLAR
-    // =================
-    
     yPosition += 10
     
     // Toplam kutusu
@@ -247,73 +273,56 @@ export class PdfGenerator {
     
     yPosition += totalBoxHeight + 20
 
-    // =================
-    // ŞARTLAR VE NOTLAR
-    // =================
-    
+    // SARTLAR VE NOTLAR
     if (quotation.terms || quotation.notes) {
-      // Şartlar
+      if (yPosition > pageHeight - 100) {
+        pdf.addPage()
+        yPosition = 30
+      }
+
       if (quotation.terms) {
+        pdf.setTextColor(255, 140, 0)
         pdf.setFontSize(12)
         pdf.setFont('helvetica', 'bold')
-        pdf.setTextColor(255, 140, 0) // Turuncu başlık
-        pdf.text('ŞARTLAR VE KOŞULLAR', margin, yPosition)
+        pdf.text('SARTLAR', margin, yPosition)
         
-        yPosition += 10
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
+        yPosition += 8
         pdf.setTextColor(0, 0, 0)
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
         const termsLines = pdf.splitTextToSize(quotation.terms, pageWidth - 2 * margin)
         pdf.text(termsLines, margin, yPosition)
         yPosition += termsLines.length * 5 + 10
       }
-      
-      // Notlar
+
       if (quotation.notes) {
+        pdf.setTextColor(255, 140, 0)
         pdf.setFontSize(12)
         pdf.setFont('helvetica', 'bold')
-        pdf.setTextColor(255, 140, 0) // Turuncu başlık
         pdf.text('NOTLAR', margin, yPosition)
         
-        yPosition += 10
-        pdf.setFontSize(9)
-        pdf.setFont('helvetica', 'normal')
+        yPosition += 8
         pdf.setTextColor(0, 0, 0)
+        pdf.setFontSize(10)
+        pdf.setFont('helvetica', 'normal')
         const notesLines = pdf.splitTextToSize(quotation.notes, pageWidth - 2 * margin)
         pdf.text(notesLines, margin, yPosition)
-        yPosition += notesLines.length * 5
       }
     }
 
-    // =================
     // FOOTER
-    // =================
-    
-    const footerY = pageHeight - 30
-    
-    // Footer çizgisi
-    pdf.setDrawColor(200, 200, 200)
-    pdf.setLineWidth(0.5)
-    pdf.line(margin, footerY, pageWidth - margin, footerY)
-    
-    // Footer metni
     pdf.setFontSize(8)
-    pdf.setFont('helvetica', 'normal')
     pdf.setTextColor(100, 100, 100)
-    pdf.text('Bu teklif 30 gün geçerlidir. Fiyatlar KDV hariçtir.', margin, footerY + 10)
-    pdf.text('MAPOS - Teknoloji çözümlerinde güvenilir ortağınız', margin, footerY + 18)
-    
-    // Sayfa numarası
-    const pageText = `Sayfa 1 / 1`
-    pdf.text(pageText, pageWidth - margin, footerY + 10, { align: 'right' })
-    
-    // Tarih
-    const generatedText = `Oluşturulma: ${new Date().toLocaleDateString('tr-TR')} ${new Date().toLocaleTimeString('tr-TR')}`
-    pdf.text(generatedText, pageWidth - margin, footerY + 18, { align: 'right' })
+    pdf.text(
+      'MAPOS - Istanbul, Turkiye - Tel: +90 (555) 123-4567 - info@mapos.com.tr',
+      pageWidth / 2, 
+      pageHeight - 10, 
+      { align: 'center' }
+    )
 
-    // PDF blob olarak döndür
-    const pdfBlob = pdf.output('blob')
-    return pdfBlob
+    // Convert to blob
+    const pdfOutput = pdf.output('blob')
+    return pdfOutput
   }
 
   /**
@@ -322,28 +331,12 @@ export class PdfGenerator {
   private getStatusText(status: string): string {
     const statusMap: { [key: string]: string } = {
       'DRAFT': 'Taslak',
-      'SENT': 'Gönderildi',
+      'SENT': 'Gonderildi',
       'ACCEPTED': 'Kabul Edildi',
       'REJECTED': 'Reddedildi',
-      'EXPIRED': 'Süresi Doldu'
+      'EXPIRED': 'Suresi Doldu'
     }
     return statusMap[status] || status
-  }
-
-  /**
-   * PDF'i indir
-   */
-  async downloadQuotationPdf(data: PdfExportData, filename?: string): Promise<void> {
-    const pdfBlob = await this.generateQuotationPdf(data)
-    const defaultFilename = `MAPOS_Teklif_${data.quotation.quotationNumber}_${new Date().toISOString().split('T')[0]}.pdf`
-    
-    const url = URL.createObjectURL(pdfBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = filename || defaultFilename
-    link.click()
-    
-    URL.revokeObjectURL(url)
   }
 
   /**
