@@ -35,158 +35,87 @@ import { Separator } from '@/components/ui/separator'
 import { QuotationStatus, QuotationStatusLabels, ProductType } from '@/lib/types'
 import { downloadQuotationPdf } from '@/lib/pdf-generator'
 
-// Simplified types for mock data
-interface QuotationDetailCustomer {
-  id: string
-  companyName: string
-  contactName: string
-  email: string
-  phone: string
-  address: string
-  taxNumber: string
-  taxOffice: string
-}
-
-interface QuotationDetailItem {
-  id: string
-  productId: string
-  productName: string
-  productType: ProductType
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  currency: string
-}
-
+// Types matching the API response
 interface QuotationDetail {
   id: string
   quotationNumber: string
   title: string
-  description: string
+  description: string | null
   customerId: string
-  customer: QuotationDetailCustomer
+  customer: {
+    id: string
+    companyName: string
+    contactName: string
+    email: string
+    phone: string
+    address: string | null
+    taxNumber: string | null
+    taxOffice: string | null
+    createdAt: string
+    updatedAt: string
+  }
   status: QuotationStatus
   totalTL: number
   totalUSD: number
   exchangeRate: number
-  validUntil: Date
-  createdAt: Date
-  updatedAt: Date
-  items: QuotationDetailItem[]
-  terms: string
-  notes: string
+  validUntil: string
+  createdAt: string
+  updatedAt: string
+  items: Array<{
+    id: string
+    quotationId: string
+    productId: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+    currency: string
+    product: {
+      id: string
+      name: string
+      type: ProductType
+      price: number
+      currency: string
+      description: string | null
+    }
+  }>
+  terms: string | null
+  notes: string | null
 }
-
-// Mock data - same as in the listing page
-const mockQuotations = [
-  {
-    id: '1',
-    quotationNumber: 'TKL-2024-001',
-    title: 'POS Sistemi Teklifi',
-    description: 'Kapsamlı POS sistemi çözümü',
-    customerId: '1',
-    customer: {
-      id: '1',
-      companyName: 'ABC Teknoloji A.Ş.',
-      contactName: 'Ahmet Yılmaz',
-      email: 'ahmet@abcteknoloji.com',
-      phone: '+90 212 123 45 67',
-      address: 'Maslak Mahallesi, Büyükdere Cad. No: 123, Şişli/İstanbul',
-      taxNumber: '1234567890',
-      taxOffice: 'Maslak V.D.'
-    },
-    status: QuotationStatus.SENT,
-    totalTL: 15750.00,
-    totalUSD: 525.00,
-    exchangeRate: 30.0,
-    validUntil: new Date('2024-02-15'),
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-15'),
-    items: [
-      {
-        id: '1',
-        productId: '1',
-        productName: 'MAPOS Pro POS Yazılımı',
-        productType: ProductType.SOFTWARE,
-        quantity: 1,
-        unitPrice: 2500,
-        totalPrice: 2500,
-        currency: 'TL'
-      },
-      {
-        id: '2',
-        productId: '2',
-        productName: 'Touch Screen Monitor 15"',
-        productType: ProductType.HARDWARE,
-        quantity: 2,
-        unitPrice: 299,
-        totalPrice: 598,
-        currency: 'USD'
-      }
-    ],
-    terms: 'Ödeme şartları: 30 gün vadeli\nTeslimat: 15 iş günü\nGaranti: 2 yıl',
-    notes: 'Kurulum desteği dahildir\nEğitim hizmeti ücretsizdir'
-  },
-  {
-    id: '2',
-    quotationNumber: 'TKL-2024-002',
-    title: 'Donanım Güncelleme Teklifi',
-    description: 'Mevcut sistemlerin güncellenmesi',
-    customerId: '2',
-    customer: {
-      id: '2',
-      companyName: 'XYZ Perakende Ltd.',
-      contactName: 'Ayşe Demir',
-      email: 'ayse@xyzperakende.com',
-      phone: '+90 312 987 65 43',
-      address: 'Çankaya Mahallesi, Atatürk Bulvarı No: 456, Çankaya/Ankara',
-      taxNumber: '0987654321',
-      taxOffice: 'Çankaya V.D.'
-    },
-    status: QuotationStatus.DRAFT,
-    totalTL: 8900.00,
-    totalUSD: 296.67,
-    exchangeRate: 30.0,
-    validUntil: new Date('2024-02-20'),
-    createdAt: new Date('2024-01-18'),
-    updatedAt: new Date('2024-01-18'),
-    items: [
-      {
-        id: '3',
-        productId: '2',
-        productName: 'Touch Screen Monitor 15"',
-        productType: ProductType.HARDWARE,
-        quantity: 3,
-        unitPrice: 299,
-        totalPrice: 897,
-        currency: 'USD'
-      }
-    ],
-    terms: 'Ödeme şartları: Peşin ödeme\nTeslimat: 5 iş günü',
-    notes: 'Hızlı teslimat gerekli'
-  }
-]
 
 export default function QuotationDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [quotation, setQuotation] = useState<QuotationDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate API call
     const fetchQuotation = async () => {
       try {
-        const found = mockQuotations.find(q => q.id === params.id)
-        setQuotation(found || null)
+        const response = await fetch(`/api/quotations/${params.id}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Teklif bulunamadı')
+          } else {
+            setError('Teklif yüklenirken bir hata oluştu')
+          }
+          return
+        }
+
+        const data = await response.json()
+        setQuotation(data)
       } catch (error) {
-        console.error('Teklif bulunamadı:', error)
+        console.error('Teklif yükleme hatası:', error)
+        setError('Teklif yüklenirken bir hata oluştu')
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchQuotation()
+    if (params.id) {
+      fetchQuotation()
+    }
   }, [params.id])
 
   const formatPrice = (price: number, currency: 'TL' | 'USD') => {
@@ -195,7 +124,7 @@ export default function QuotationDetailPage() {
       maximumFractionDigits: 2
     })
     const formattedPrice = formatter.format(price)
-    return currency === 'TL' ? `${formattedPrice} ₺` : `$${formattedPrice}`
+    return currency === 'TL' ? `₺${formattedPrice}` : `$${formattedPrice}`
   }
 
   const getStatusColor = (status: QuotationStatus) => {
@@ -219,15 +148,31 @@ export default function QuotationDetailPage() {
     if (!quotation) return
     
     try {
-      await downloadQuotationPdf({
-        quotation: {
-          ...quotation,
-          customer: {
-            ...quotation.customer,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          }
+      // Transform the API data to match the PDF generator expectations
+      const pdfQuotation = {
+        ...quotation,
+        validUntil: new Date(quotation.validUntil),
+        createdAt: new Date(quotation.createdAt),
+        updatedAt: new Date(quotation.updatedAt),
+        customer: {
+          ...quotation.customer,
+          createdAt: new Date(quotation.customer.createdAt),
+          updatedAt: new Date(quotation.customer.updatedAt)
         },
+        items: quotation.items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.product.name,
+          productType: item.product.type,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.totalPrice,
+          currency: item.currency
+        }))
+      }
+
+      await downloadQuotationPdf({
+        quotation: pdfQuotation,
         companyInfo: {
           name: 'MAPOS',
           address: 'İstanbul, Türkiye',
@@ -243,10 +188,23 @@ export default function QuotationDetailPage() {
     }
   }
 
-  const handleDelete = () => {
-    if (confirm('Bu teklifi silmek istediğinizden emin misiniz?')) {
-      // TODO: API call to delete
+  const handleDelete = async () => {
+    if (!confirm('Bu teklifi silmek istediğinizden emin misiniz?')) return
+    
+    try {
+      const response = await fetch(`/api/quotations/${params.id}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Silme işlemi başarısız')
+      }
+
+      alert('Teklif başarıyla silindi')
       router.push('/teklifler')
+    } catch (error) {
+      console.error('Silme hatası:', error)
+      alert('Teklif silinirken bir hata oluştu')
     }
   }
 
@@ -269,7 +227,7 @@ export default function QuotationDetailPage() {
     )
   }
 
-  if (!quotation) {
+  if (error || !quotation) {
     return (
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
@@ -282,7 +240,7 @@ export default function QuotationDetailPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Teklif Bulunamadı</h1>
             <p className="text-muted-foreground">
-              Bu teklif bulunamadı veya silinmiş olabilir.
+              {error || 'Bu teklif bulunamadı veya silinmiş olabilir.'}
             </p>
           </div>
         </div>
@@ -291,7 +249,7 @@ export default function QuotationDetailPage() {
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">Teklif Bulunamadı</h3>
             <p className="text-muted-foreground mb-4">
-              Aradığınız teklif mevcut değil.
+              {error || 'Aradığınız teklif mevcut değil.'}
             </p>
             <Button asChild>
               <Link href="/teklifler">
@@ -373,15 +331,15 @@ export default function QuotationDetailPage() {
                   <label className="text-sm font-medium text-muted-foreground">
                     Oluşturma Tarihi
                   </label>
-                  <p>{quotation.createdAt.toLocaleDateString('tr-TR')}</p>
+                  <p>{new Date(quotation.createdAt).toLocaleDateString('tr-TR')}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
                     Geçerlilik Tarihi
                   </label>
-                  <p className={quotation.validUntil < new Date() ? 'text-red-600' : ''}>
-                    {quotation.validUntil.toLocaleDateString('tr-TR')}
-                    {quotation.validUntil < new Date() && ' (Süresi doldu)'}
+                  <p className={new Date(quotation.validUntil) < new Date() ? 'text-red-600' : ''}>
+                    {new Date(quotation.validUntil).toLocaleDateString('tr-TR')}
+                    {new Date(quotation.validUntil) < new Date() && ' (Süresi doldu)'}
                   </p>
                 </div>
               </div>
@@ -482,9 +440,9 @@ export default function QuotationDetailPage() {
                     <TableRow key={item.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{item.productName}</div>
+                          <div className="font-medium">{item.product.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {item.productType === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
+                            {item.product.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
                           </div>
                         </div>
                       </TableCell>

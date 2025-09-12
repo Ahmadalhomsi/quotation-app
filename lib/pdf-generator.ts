@@ -31,8 +31,8 @@ export class PdfGenerator {
     // HEADER SECTION
     // =================
     
-    // Şirket logosu alanı (mavi arka plan)
-    pdf.setFillColor(41, 98, 255) // MAPOS mavi rengi
+    // Şirket logosu alanı (turuncu/siyah tema)
+    pdf.setFillColor(255, 140, 0) // Turuncu renk
     pdf.rect(0, 0, pageWidth, 50, 'F')
     
     // Şirket adı - büyük ve beyaz
@@ -68,7 +68,7 @@ export class PdfGenerator {
     
     pdf.setFontSize(14)
     pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(41, 98, 255)
+    pdf.setTextColor(255, 140, 0) // Turuncu renk
     pdf.text('FATURA ADRESİ', margin + 10, yPosition + 15)
     
     pdf.setTextColor(0, 0, 0)
@@ -89,7 +89,7 @@ export class PdfGenerator {
 
     // Sağ taraf - Teklif bilgileri
     const rightBoxX = margin + (pageWidth - 3 * margin) / 2 + 10
-    pdf.setFillColor(41, 98, 255)
+    pdf.setFillColor(0, 0, 0) // Siyah arka plan
     pdf.rect(rightBoxX, yPosition, (pageWidth - 3 * margin) / 2, 70, 'F')
     
     pdf.setTextColor(255, 255, 255)
@@ -100,8 +100,8 @@ export class PdfGenerator {
     pdf.setFontSize(10)
     pdf.setFont('helvetica', 'normal')
     pdf.text(`No: ${quotation.quotationNumber}`, rightBoxX + 10, yPosition + 35)
-    pdf.text(`Tarih: ${quotation.createdAt.toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 43)
-    pdf.text(`Geçerlilik: ${quotation.validUntil.toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 51)
+    pdf.text(`Tarih: ${new Date(quotation.createdAt).toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 43)
+    pdf.text(`Geçerlilik: ${new Date(quotation.validUntil).toLocaleDateString('tr-TR')}`, rightBoxX + 10, yPosition + 51)
     
     // Durumu göster
     const statusText = this.getStatusText(quotation.status)
@@ -117,7 +117,7 @@ export class PdfGenerator {
     
     pdf.setFontSize(16)
     pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(41, 98, 255)
+    pdf.setTextColor(255, 140, 0) // Turuncu başlık
     pdf.text(quotation.title, margin, yPosition)
     
     if (quotation.description) {
@@ -138,7 +138,7 @@ export class PdfGenerator {
     // =================
     
     // Tablo başlığı
-    pdf.setFillColor(41, 98, 255)
+    pdf.setFillColor(0, 0, 0) // Siyah başlık
     pdf.rect(margin, yPosition, pageWidth - 2 * margin, 12, 'F')
     
     pdf.setTextColor(255, 255, 255)
@@ -211,7 +211,7 @@ export class PdfGenerator {
     const totalBoxHeight = 40
     pdf.setFillColor(248, 249, 250)
     pdf.rect(pageWidth - margin - 100, yPosition, 100, totalBoxHeight, 'F')
-    pdf.setDrawColor(41, 98, 255)
+    pdf.setDrawColor(255, 140, 0) // Turuncu kenarlık
     pdf.setLineWidth(1)
     pdf.rect(pageWidth - margin - 100, yPosition, 100, totalBoxHeight)
     
@@ -219,7 +219,7 @@ export class PdfGenerator {
     
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'bold')
-    pdf.setTextColor(41, 98, 255)
+    pdf.setTextColor(255, 140, 0) // Turuncu başlık
     pdf.text('TOPLAM TUTAR', pageWidth - margin - 95, totalY)
     
     totalY += 10
@@ -239,7 +239,9 @@ export class PdfGenerator {
     if (exchangeRate && quotation.totalUSD) {
       pdf.setFontSize(8)
       pdf.setTextColor(100, 100, 100)
-      pdf.text(`Kur: ${exchangeRate.toFixed(4)}`, pageWidth - margin - 95, yPosition + totalBoxHeight - 5)
+      const rateNumber = typeof exchangeRate === 'number' ? exchangeRate : parseFloat(String(exchangeRate))
+      const rateText = Number.isFinite(rateNumber) ? rateNumber.toFixed(4) : String(exchangeRate)
+      pdf.text(`Kur: ${rateText}`, pageWidth - margin - 95, yPosition + totalBoxHeight - 5)
     }
     
     yPosition += totalBoxHeight + 20
@@ -253,7 +255,7 @@ export class PdfGenerator {
       if (quotation.terms) {
         pdf.setFontSize(12)
         pdf.setFont('helvetica', 'bold')
-        pdf.setTextColor(41, 98, 255)
+        pdf.setTextColor(255, 140, 0) // Turuncu başlık
         pdf.text('ŞARTLAR VE KOŞULLAR', margin, yPosition)
         
         yPosition += 10
@@ -269,7 +271,7 @@ export class PdfGenerator {
       if (quotation.notes) {
         pdf.setFontSize(12)
         pdf.setFont('helvetica', 'bold')
-        pdf.setTextColor(41, 98, 255)
+        pdf.setTextColor(255, 140, 0) // Turuncu başlık
         pdf.text('NOTLAR', margin, yPosition)
         
         yPosition += 10

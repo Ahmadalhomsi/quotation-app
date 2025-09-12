@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   Package, 
@@ -35,38 +35,94 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Currency, ProductType, ProductTypeLabels, CurrencyLabels } from '@/lib/types'
+import { Badge } from '@/components/ui/badge'
+import { Currency, ProductType, ProductTypeLabels } from '@/lib/types'
 
-// Mock data - bu gerçek uygulamada API'den gelecek
-const mockProducts = [
-  {
-    id: '1',
-    name: 'MAPOS Pro POS Yazılımı',
-    description: 'Kapsamlı satış noktası yazılımı',
-    price: 2500,
-    currency: Currency.TL,
-    type: ProductType.SOFTWARE,
-    sku: 'MAPOS-PRO-001',
-    isActive: true,
-    createdAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    name: 'Touch Screen Monitor 15"',
-    description: '15 inç dokunmatik ekran',
-    price: 299,
-    currency: Currency.USD,
-    type: ProductType.HARDWARE,
-    sku: 'TOUCH-15-001',
-    isActive: true,
-    createdAt: new Date('2024-01-10')
-  }
-]
+// Types for API data
+interface Product {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  currency: Currency
+  type: ProductType
+  sku: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
-  const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [currencyFilter, setCurrencyFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [typeFilter, setTypeFilter] = useState<'all' | ProductType>('all')
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true)
+        const params = new URLSearchParams()
+        
+        if (statusFilter !== 'all') {
+          params.append('active', statusFilter === 'active' ? 'true' : 'false')
+        }
+        
+        if (typeFilter !== 'all') {
+          params.append('type', typeFilter)
+        }
+
+        const response = await fetch(`/api/products?${params.toString()}`)
+        
+        if (!response.ok) {
+          throw new Error('Ürünler alınamadı')
+        }
+        
+        const data = await response.json()
+        setProducts(data.products || [])
+      } catch (error) {
+        console.error('Ürünler yüklenemedi:', error)
+        setError(error instanceof Error ? error.message : 'Ürünler yüklenemedi')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProducts()
+  }, [statusFilter, typeFilter])
+
+  const filteredProducts = products.filter(product => {
+    const searchLower = searchTerm.toLowerCase()
+    return (
+      product.name.toLowerCase().includes(searchLower) ||
+      product.description?.toLowerCase().includes(searchLower) ||
+      product.sku?.toLowerCase().includes(searchLower)
+    )
+  })
+
+  const handleDelete = async (productId: string, productName: string) => {
+    if (!confirm(`"${productName}" ürününü silmek istediğinizden emin misiniz?`)) return
+
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Ürün silinemedi')
+      }
+
+      // Remove from local state
+      setProducts(prev => prev.filter(p => p.id !== productId))
+      alert('Ürün başarıyla silindi')
+    } catch (error) {
+      console.error('Ürün silme hatası:', error)
+      alert('Ürün silinirken bir hata oluştu')
+    }
+  }
 
   const formatPrice = (price: number, currency: Currency) => {
     const formatter = new Intl.NumberFormat('tr-TR', {
@@ -74,19 +130,64 @@ export default function ProductsPage() {
       maximumFractionDigits: 2
     })
     const formattedPrice = formatter.format(price)
-    return currency === Currency.TL ? `${formattedPrice} ₺` : `$${formattedPrice}`
+    return currency === Currency.TL ? `₺${formattedPrice}` : `$${formattedPrice}`
   }
 
-  const filteredProducts = mockProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.sku?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesType = typeFilter === 'all' || product.type === typeFilter
-    const matchesCurrency = currencyFilter === 'all' || product.currency === currencyFilter
-    
-    return matchesSearch && matchesType && matchesCurrency
-  })
+  // Calculate statistics
+  const activeProducts = products.filter(p => p.isActive).length
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+  const productsThisMonth = products.filter(product => {
+    const createdDate = new Date(product.createdAt)
+    return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear
+  }).length
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Ürün Yönetimi</h1>
+            <p className="text-muted-foreground">Veriler yükleniyor...</p>
+          </div>
+          <Button asChild>
+            <Link href="/urunler/yeni">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Ürün
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Ürün Yönetimi</h1>
+            <p className="text-red-600">{error}</p>
+          </div>
+          <Button asChild>
+            <Link href="/urunler/yeni">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Ürün
+            </Link>
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <h3 className="text-lg font-medium mb-2">Veriler Yüklenemedi</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Tekrar Dene
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -95,7 +196,7 @@ export default function ProductsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Ürün Yönetimi</h1>
           <p className="text-muted-foreground">
-            Katalog ürünlerinizi görüntüleyin ve yönetin
+            Ürünlerinizi görüntüleyin ve yönetin
           </p>
         </div>
         <Button asChild>
@@ -109,54 +210,42 @@ export default function ProductsPage() {
       {/* Filtreler */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filtreler</CardTitle>
-          <CardDescription>Ürünleri arayın ve filtreleyin</CardDescription>
+          <CardTitle className="text-lg">Ürün Arama ve Filtreleme</CardTitle>
+          <CardDescription>Ürünlerinizi arayın ve filtreleyin</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Ürün adı, açıklama veya SKU ile arayın..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Ürün adı, açıklama veya SKU ile arayın..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <div className="w-full md:w-48">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Ürün Tipi" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Tipler</SelectItem>
-                  <SelectItem value={ProductType.SOFTWARE}>
-                    {ProductTypeLabels[ProductType.SOFTWARE]}
-                  </SelectItem>
-                  <SelectItem value={ProductType.HARDWARE}>
-                    {ProductTypeLabels[ProductType.HARDWARE]}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="w-full md:w-48">
-              <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Para Birimi" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tüm Para Birimleri</SelectItem>
-                  <SelectItem value={Currency.TL}>
-                    {CurrencyLabels[Currency.TL]}
-                  </SelectItem>
-                  <SelectItem value={Currency.USD}>
-                    {CurrencyLabels[Currency.USD]}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            
+            <Select value={statusFilter} onValueChange={(value: 'all' | 'active' | 'inactive') => setStatusFilter(value)}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Durum" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Durumlar</SelectItem>
+                <SelectItem value="active">Aktif</SelectItem>
+                <SelectItem value="inactive">Pasif</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={(value: 'all' | ProductType) => setTypeFilter(value)}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Tür" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tüm Türler</SelectItem>
+                <SelectItem value={ProductType.SOFTWARE}>Yazılım</SelectItem>
+                <SelectItem value={ProductType.HARDWARE}>Donanım</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -172,11 +261,13 @@ export default function ProductsPage() {
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Ürün bulunamadı</h3>
+              <h3 className="text-lg font-medium mb-2">
+                {products.length === 0 ? 'Henüz ürün eklenmemiş' : 'Ürün bulunamadı'}
+              </h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm || typeFilter !== 'all' || currencyFilter !== 'all'
-                  ? 'Arama kriterlerinizi değiştirmeyi deneyin'
-                  : 'Henüz ürün eklenmemiş'}
+                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                  ? 'Arama/filtre kriterlerinizi değiştirmeyi deneyin'
+                  : 'Veritabanında ürün bulunamadı. İlk ürününüzü ekleyin.'}
               </p>
               <Button asChild>
                 <Link href="/urunler/yeni">
@@ -189,11 +280,12 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ürün Adı</TableHead>
-                  <TableHead>Tip</TableHead>
+                  <TableHead>Ürün Bilgileri</TableHead>
+                  <TableHead>Tür</TableHead>
                   <TableHead>Fiyat</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Durum</TableHead>
+                  <TableHead>Kayıt Tarihi</TableHead>
                   <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
@@ -201,38 +293,33 @@ export default function ProductsPage() {
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <div>
+                      <div className="space-y-1">
                         <div className="font-medium">{product.name}</div>
                         {product.description && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-sm text-muted-foreground line-clamp-2">
                             {product.description}
                           </div>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        product.type === ProductType.SOFTWARE
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
+                      <Badge variant="outline">
                         {ProductTypeLabels[product.type]}
-                      </span>
+                      </Badge>
                     </TableCell>
                     <TableCell className="font-mono">
-                      {formatPrice(product.price, product.currency)}
+                      {formatPrice(Number(product.price), product.currency)}
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {product.sku || '-'}
+                      {product.sku || 'Yok'}
                     </TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        product.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <Badge variant={product.isActive ? 'default' : 'secondary'}>
                         {product.isActive ? 'Aktif' : 'Pasif'}
-                      </span>
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(product.createdAt).toLocaleDateString('tr-TR')}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
@@ -246,7 +333,12 @@ export default function ProductsPage() {
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDelete(product.id, product.name)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -258,6 +350,54 @@ export default function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* İstatistikler */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Toplam Ürün
+            </CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{products.length}</div>
+            <p className="text-xs text-muted-foreground">
+              Katalogda kayıtlı
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Aktif Ürün
+            </CardTitle>
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeProducts}</div>
+            <p className="text-xs text-muted-foreground">
+              Satışa hazır
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Bu Ay Eklenen
+            </CardTitle>
+            <Plus className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{productsThisMonth}</div>
+            <p className="text-xs text-muted-foreground">
+              Yeni ürün
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

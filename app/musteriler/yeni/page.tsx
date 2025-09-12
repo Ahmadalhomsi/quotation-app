@@ -75,17 +75,27 @@ export default function NewCustomerPage() {
     setIsLoading(true)
 
     try {
-      // TODO: API çağrısı yapılacak
-      console.log('Yeni müşteri oluşturuluyor:', formData)
-      
-      // Simüle edilmiş API gecikme
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Müşteri oluşturulamadı')
+      }
+
+      const result = await response.json()
+      console.log('Müşteri başarıyla oluşturuldu:', result)
       
       // Başarılı olursa müşteriler sayfasına yönlendir
       router.push('/musteriler')
     } catch (error) {
       console.error('Müşteri oluşturma hatası:', error)
-      // TODO: Hata mesajı göster
+      alert(error instanceof Error ? error.message : 'Müşteri oluşturulurken bir hata oluştu')
     } finally {
       setIsLoading(false)
     }

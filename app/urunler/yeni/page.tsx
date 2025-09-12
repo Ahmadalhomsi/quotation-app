@@ -75,17 +75,27 @@ export default function NewProductPage() {
     setIsLoading(true)
 
     try {
-      // TODO: API çağrısı yapılacak
-      console.log('Yeni ürün oluşturuluyor:', formData)
-      
-      // Simüle edilmiş API gecikme
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Ürün oluşturulamadı')
+      }
+
+      const result = await response.json()
+      console.log('Ürün başarıyla oluşturuldu:', result)
       
       // Başarılı olursa ürünler sayfasına yönlendir
       router.push('/urunler')
     } catch (error) {
       console.error('Ürün oluşturma hatası:', error)
-      // TODO: Hata mesajı göster
+      alert(error instanceof Error ? error.message : 'Ürün oluşturulurken bir hata oluştu')
     } finally {
       setIsLoading(false)
     }

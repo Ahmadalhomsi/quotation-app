@@ -49,32 +49,26 @@ import {
 } from '@/lib/types'
 import { currencyService } from '@/lib/currency'
 
-// Mock data
-const mockCustomers = [
-  { id: '1', companyName: 'ABC Teknoloji A.Ş.', contactName: 'Ahmet Yılmaz' },
-  { id: '2', companyName: 'XYZ Perakende Ltd.', contactName: 'Ayşe Demir' }
-]
+// Types for API data
+interface Customer {
+  id: string
+  companyName: string
+  contactName: string
+  email: string
+}
 
-const mockProducts = [
-  {
-    id: '1',
-    name: 'MAPOS Pro POS Yazılımı',
-    price: 2500,
-    currency: Currency.TL,
-    type: ProductType.SOFTWARE
-  },
-  {
-    id: '2',
-    name: 'Touch Screen Monitor 15"',
-    price: 299,
-    currency: Currency.USD,
-    type: ProductType.HARDWARE
-  }
-]
+interface Product {
+  id: string
+  name: string
+  price: number
+  currency: Currency
+  type: ProductType
+  description?: string
+}
 
 interface QuotationItem extends CreateQuotationItemData {
   id: string
-  product?: typeof mockProducts[0]
+  product?: Product
   totalPrice: number
 }
 
@@ -82,6 +76,12 @@ export default function NewQuotationPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [exchangeRate, setExchangeRate] = useState<number>(30)
+  
+  // Data states
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [loadingData, setLoadingData] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
   const [formData, setFormData] = useState<CreateQuotationData>({
     title: '',
@@ -103,17 +103,49 @@ export default function NewQuotationPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Döviz kurunu al
+  // Fetch initial data
   useEffect(() => {
-    const fetchExchangeRate = async () => {
+    const fetchData = async () => {
       try {
-        const rate = await currencyService.getUsdToTryRate()
-        setExchangeRate(rate)
+        setLoadingData(true)
+        
+        const [customersResponse, productsResponse] = await Promise.all([
+          fetch('/api/customers'),
+          fetch('/api/products?active=true')
+        ])
+
+        if (!customersResponse.ok) {
+          throw new Error('Müşteriler alınamadı')
+        }
+        
+        if (!productsResponse.ok) {
+          throw new Error('Ürünler alınamadı')
+        }
+
+        const customersData = await customersResponse.json()
+        const productsData = await productsResponse.json()
+
+        setCustomers(customersData.customers || [])
+        setProducts(productsData.products || [])
+        
+        // Get exchange rate
+        try {
+          const rate = await currencyService.getUsdToTryRate()
+          setExchangeRate(rate)
+        } catch (rateError) {
+          console.error('Döviz kuru alınamadı:', rateError)
+          // Use default rate of 30 if API fails
+        }
+        
       } catch (error) {
-        console.error('Döviz kuru alınamadı:', error)
+        console.error('Veri yükleme hatası:', error)
+        setError(error instanceof Error ? error.message : 'Veriler yüklenirken hata oluştu')
+      } finally {
+        setLoadingData(false)
       }
     }
-    fetchExchangeRate()
+
+    fetchData()
   }, [])
 
   const formatPrice = (price: number, currency: Currency) => {
@@ -122,7 +154,7 @@ export default function NewQuotationPage() {
       maximumFractionDigits: 2
     })
     const formattedPrice = formatter.format(price)
-    return currency === Currency.TL ? `${formattedPrice} ₺` : `$${formattedPrice}`
+    return currency === Currency.TL ? `₺${formattedPrice}` : `$${formattedPrice}`
   }
 
   const calculateItemTotal = (quantity: number, unitPrice: number) => {
@@ -150,7 +182,7 @@ export default function NewQuotationPage() {
       return
     }
 
-    const product = mockProducts.find(p => p.id === newItem.productId)
+    const product = products.find(p => p.id === newItem.productId)
     if (!product) return
 
     const item: QuotationItem = {
@@ -185,12 +217,12 @@ export default function NewQuotationPage() {
   }
 
   const handleProductSelect = (productId: string) => {
-    const product = mockProducts.find(p => p.id === productId)
+    const product = products.find(p => p.id === productId)
     if (product) {
       setNewItem(prev => ({
         ...prev,
         productId,
-        unitPrice: product.price,
+        unitPrice: Number(product.price),
         currency: product.currency
       }))
     }
@@ -225,31 +257,93 @@ export default function NewQuotationPage() {
     setIsLoading(true)
 
     try {
-      const quotationData: CreateQuotationData = {
+      const quotationData = {
         ...formData,
+        exchangeRate,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          currency: item.currency
+          totalPrice: item.totalPrice,
+          currency: item.currency,
+          productName: item.product?.name || '',
+          productType: item.product?.type || ProductType.SOFTWARE
         }))
       }
 
-      console.log('Yeni teklif oluşturuluyor:', quotationData)
-      
-      // Simüle edilmiş API gecikme
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
+      const response = await fetch('/api/quotations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(quotationData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Teklif oluşturulamadı')
+      }
+
       // Başarılı olursa teklifler sayfasına yönlendir
       router.push('/teklifler')
     } catch (error) {
       console.error('Teklif oluşturma hatası:', error)
+      setError(error instanceof Error ? error.message : 'Teklif oluşturulurken hata oluştu')
     } finally {
       setIsLoading(false)
     }
   }
 
   const { totalTL, totalUSD } = calculateQuotationTotals()
+
+  // Loading state
+  if (loadingData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/teklifler">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Geri
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Yeni Teklif Oluştur</h1>
+            <p className="text-muted-foreground">Veriler yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/teklifler">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Geri
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Hata</h1>
+            <p className="text-red-600">{error}</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <h3 className="text-lg font-medium mb-2">Veriler Yüklenemedi</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Tekrar Dene
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -268,6 +362,12 @@ export default function NewQuotationPage() {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-3">
@@ -307,10 +407,10 @@ export default function NewQuotationPage() {
                       onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
                     >
                       <SelectTrigger className={errors.customerId ? 'border-red-500' : ''}>
-                        <SelectValue placeholder="Müşteri seçin" />
+                        <SelectValue placeholder={customers.length === 0 ? "Müşteri bulunamadı" : "Müşteri seçin"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockCustomers.map((customer) => (
+                        {customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.id}>
                             {customer.companyName}
                           </SelectItem>
@@ -319,6 +419,11 @@ export default function NewQuotationPage() {
                     </Select>
                     {errors.customerId && (
                       <p className="text-sm text-red-500">{errors.customerId}</p>
+                    )}
+                    {customers.length === 0 && (
+                      <p className="text-sm text-amber-600">
+                        Veritabanında müşteri bulunamadı. Önce müşteri eklemeniz gerekiyor.
+                      </p>
                     )}
                   </div>
                 </div>
@@ -369,16 +474,21 @@ export default function NewQuotationPage() {
                       onValueChange={handleProductSelect}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Ürün seçin" />
+                        <SelectValue placeholder={products.length === 0 ? "Ürün bulunamadı" : "Ürün seçin"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockProducts.map((product) => (
+                        {products.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {products.length === 0 && (
+                      <p className="text-sm text-amber-600">
+                        Veritabanında ürün bulunamadı. Önce ürün eklemeniz gerekiyor.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -427,7 +537,12 @@ export default function NewQuotationPage() {
                   </div>
 
                   <div className="flex items-end">
-                    <Button type="button" onClick={addItem} className="w-full">
+                    <Button 
+                      type="button" 
+                      onClick={addItem} 
+                      className="w-full"
+                      disabled={products.length === 0}
+                    >
                       <Plus className="mr-2 h-4 w-4" />
                       Ekle
                     </Button>
@@ -579,7 +694,7 @@ export default function NewQuotationPage() {
                 </CardHeader>
                 <CardContent>
                   {(() => {
-                    const customer = mockCustomers.find(c => c.id === formData.customerId)
+                    const customer = customers.find(c => c.id === formData.customerId)
                     return customer ? (
                       <div className="space-y-1">
                         <div className="font-medium">{customer.companyName}</div>
@@ -611,6 +726,32 @@ export default function NewQuotationPage() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Data Status */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Veri Durumu</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2">
+                <div className="flex justify-between">
+                  <span>Müşteriler:</span>
+                  <span className={customers.length === 0 ? 'text-red-600' : 'text-green-600'}>
+                    {customers.length} adet
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ürünler:</span>
+                  <span className={products.length === 0 ? 'text-red-600' : 'text-green-600'}>
+                    {products.length} adet
+                  </span>
+                </div>
+                {(customers.length === 0 || products.length === 0) && (
+                  <p className="text-amber-600 text-xs">
+                    Teklif oluşturmak için önce müşteri ve ürün eklemeniz gerekiyor.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
 
@@ -619,7 +760,10 @@ export default function NewQuotationPage() {
           <Button type="button" variant="outline" asChild>
             <Link href="/teklifler">İptal</Link>
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            disabled={isLoading || customers.length === 0 || products.length === 0}
+          >
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />

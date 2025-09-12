@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   Users, 
@@ -32,36 +32,51 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-// Mock data - bu gerçek uygulamada API'den gelecek
-const mockCustomers = [
-  {
-    id: '1',
-    companyName: 'ABC Teknoloji A.Ş.',
-    contactName: 'Ahmet Yılmaz',
-    email: 'ahmet@abcteknoloji.com',
-    phone: '+90 212 123 45 67',
-    address: 'Maslak Mahallesi, Büyükdere Cad. No: 123, Şişli/İstanbul',
-    taxNumber: '1234567890',
-    taxOffice: 'Maslak V.D.',
-    createdAt: new Date('2024-01-15')
-  },
-  {
-    id: '2',
-    companyName: 'XYZ Perakende Ltd.',
-    contactName: 'Ayşe Demir',
-    email: 'ayse@xyzperakende.com',
-    phone: '+90 312 987 65 43',
-    address: 'Çankaya Mahallesi, Atatürk Bulvarı No: 456, Çankaya/Ankara',
-    taxNumber: '0987654321',
-    taxOffice: 'Çankaya V.D.',
-    createdAt: new Date('2024-01-10')
-  }
-]
+// Types for API data
+interface Customer {
+  id: string
+  companyName: string
+  contactName: string
+  email: string
+  phone: string
+  address: string | null
+  taxNumber: string | null
+  taxOffice: string | null
+  createdAt: string
+  updatedAt: string
+}
 
 export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredCustomers = mockCustomers.filter(customer => {
+  // Fetch customers from API
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/customers')
+        
+        if (!response.ok) {
+          throw new Error('Müşteriler alınamadı')
+        }
+        
+        const data = await response.json()
+        setCustomers(data.customers || [])
+      } catch (error) {
+        console.error('Müşteriler yüklenemedi:', error)
+        setError(error instanceof Error ? error.message : 'Müşteriler yüklenemedi')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchCustomers()
+  }, [])
+
+  const filteredCustomers = customers.filter(customer => {
     const searchLower = searchTerm.toLowerCase()
     return (
       customer.companyName.toLowerCase().includes(searchLower) ||
@@ -71,6 +86,82 @@ export default function CustomersPage() {
       customer.taxNumber?.includes(searchTerm)
     )
   })
+
+  const handleDelete = async (customerId: string, companyName: string) => {
+    if (!confirm(`"${companyName}" müşterisini silmek istediğinizden emin misiniz?`)) return
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        throw new Error('Müşteri silinemedi')
+      }
+
+      // Remove from local state
+      setCustomers(prev => prev.filter(c => c.id !== customerId))
+      alert('Müşteri başarıyla silindi')
+    } catch (error) {
+      console.error('Müşteri silme hatası:', error)
+      alert('Müşteri silinirken bir hata oluştu')
+    }
+  }
+
+  // Calculate statistics
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+  const customersThisMonth = customers.filter(customer => {
+    const createdDate = new Date(customer.createdAt)
+    return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear
+  }).length
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Müşteri Yönetimi</h1>
+            <p className="text-muted-foreground">Veriler yükleniyor...</p>
+          </div>
+          <Button asChild>
+            <Link href="/musteriler/yeni">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Müşteri
+            </Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Müşteri Yönetimi</h1>
+            <p className="text-red-600">{error}</p>
+          </div>
+          <Button asChild>
+            <Link href="/musteriler/yeni">
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Müşteri
+            </Link>
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="p-12 text-center">
+            <h3 className="text-lg font-medium mb-2">Veriler Yüklenemedi</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => window.location.reload()}>
+              Tekrar Dene
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -120,11 +211,13 @@ export default function CustomersPage() {
           {filteredCustomers.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Müşteri bulunamadı</h3>
+              <h3 className="text-lg font-medium mb-2">
+                {customers.length === 0 ? 'Henüz müşteri eklenmemiş' : 'Müşteri bulunamadı'}
+              </h3>
               <p className="text-muted-foreground mb-4">
                 {searchTerm
                   ? 'Arama kriterlerinizi değiştirmeyi deneyin'
-                  : 'Henüz müşteri eklenmemiş'}
+                  : 'Veritabanında müşteri bulunamadı. İlk müşterinizi ekleyin.'}
               </p>
               <Button asChild>
                 <Link href="/musteriler/yeni">
@@ -172,12 +265,12 @@ export default function CustomersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1 text-sm">
-                        <div>VN: {customer.taxNumber}</div>
-                        <div className="text-muted-foreground">{customer.taxOffice}</div>
+                        <div>VN: {customer.taxNumber || 'Belirtilmemiş'}</div>
+                        <div className="text-muted-foreground">{customer.taxOffice || 'Belirtilmemiş'}</div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
-                      {customer.createdAt.toLocaleDateString('tr-TR')}
+                      {new Date(customer.createdAt).toLocaleDateString('tr-TR')}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
@@ -191,7 +284,12 @@ export default function CustomersPage() {
                             <Edit className="h-4 w-4" />
                           </Link>
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-red-600 hover:text-red-800"
+                          onClick={() => handleDelete(customer.id, customer.companyName)}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
@@ -214,7 +312,7 @@ export default function CustomersPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockCustomers.length}</div>
+            <div className="text-2xl font-bold">{customers.length}</div>
             <p className="text-xs text-muted-foreground">
               Sistemde kayıtlı
             </p>
@@ -229,7 +327,7 @@ export default function CustomersPage() {
             <Plus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{customersThisMonth}</div>
             <p className="text-xs text-muted-foreground">
               Yeni müşteri
             </p>
