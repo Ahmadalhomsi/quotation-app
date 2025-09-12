@@ -27,36 +27,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   header: {
-    backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    backgroundColor: '#FF6B35', // Simplified - no gradient support
     padding: 20,
     marginBottom: 20,
     marginLeft: -25,
     marginRight: -25,
     marginTop: -25,
-    borderRadius: 0,
-  },
-  headerGradient: {
-    backgroundColor: '#667eea',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
   },
   companyName: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 4,
-    letterSpacing: 0.5,
   },
   companyTagline: {
     fontSize: 11,
     color: '#E8EEFF',
     marginBottom: 10,
-    fontStyle: 'italic',
   },
   contactInfo: {
     fontSize: 9,
-    color: '#E8EEFF',
+    color: '#FFE5CC',
     textAlign: 'right',
-    lineHeight: 1.3,
   },
   quotationInfo: {
     flexDirection: 'row',
@@ -64,12 +56,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 15,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    border: '2px solid #667eea',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    borderWidth: 2,
+    borderColor: '#FF6B35',
   },
   quotationLeft: {
     flex: 1,
@@ -81,9 +69,8 @@ const styles = StyleSheet.create({
   quotationTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#667eea',
+    color: '#FF6B35',
     marginBottom: 6,
-    letterSpacing: 0.5,
   },
   quotationNumber: {
     fontSize: 12,
@@ -99,14 +86,13 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#667eea',
+    color: '#FF6B35',
     marginBottom: 4,
   },
   statusText: {
     fontSize: 11,
     fontWeight: 'bold',
     padding: 4,
-    borderRadius: 4,
     backgroundColor: '#E8F5E8',
     color: '#2E7D32',
     textAlign: 'center',
@@ -114,24 +100,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#667eea',
+    color: '#FF6B35',
     marginBottom: 10,
     marginTop: 15,
     paddingBottom: 3,
     borderBottomWidth: 2,
-    borderBottomColor: '#667eea',
-    letterSpacing: 0.3,
+    borderBottomColor: '#FF6B35',
   },
   customerInfo: {
     marginBottom: 20,
     padding: 15,
     backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    border: '1px solid #E0E7FF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
   },
   customerTitle: {
     fontSize: 13,
@@ -143,20 +124,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginBottom: 3,
     color: '#555555',
-    lineHeight: 1.3,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#667eea',
+    backgroundColor: '#FF6B35',
     padding: 10,
     marginBottom: 2,
-    borderRadius: 6,
   },
   tableHeaderText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    letterSpacing: 0.2,
   },
   tableRow: {
     flexDirection: 'row',
@@ -172,13 +150,11 @@ const styles = StyleSheet.create({
   tableCell: {
     fontSize: 10,
     color: '#374151',
-    lineHeight: 1.2,
   },
   tableCellBold: {
     fontSize: 10,
     fontWeight: 'bold',
     color: '#1F2937',
-    lineHeight: 1.2,
   },
   productName: {
     flex: 3.5,
@@ -202,22 +178,17 @@ const styles = StyleSheet.create({
   },
   totalsBox: {
     backgroundColor: '#FFFFFF',
-    border: '2px solid #667eea',
+    borderWidth: 2,
+    borderColor: '#FF6B35',
     padding: 15,
     width: 200,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   totalsTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#667eea',
+    color: '#FF6B35',
     marginBottom: 12,
     textAlign: 'center',
-    letterSpacing: 0.3,
   },
   totalsRow: {
     flexDirection: 'row',
@@ -240,7 +211,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 8,
-    fontStyle: 'italic',
   },
   termsSection: {
     marginTop: 15,
@@ -250,18 +220,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#667eea',
-    letterSpacing: 0.2,
+    color: '#FF6B35',
   },
   termsText: {
     fontSize: 10,
-    lineHeight: 1.4,
     marginBottom: 10,
     color: '#374151',
     backgroundColor: '#F9FAFB',
     padding: 10,
-    borderRadius: 6,
-    border: '1px solid #E5E7EB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  descriptionText: {
+    fontSize: 10,
+    marginBottom: 15,
+    color: '#374151',
+    backgroundColor: '#F9FAFB',
+    padding: 10,
+  },
+  productType: {
+    fontSize: 8,
+    color: '#666666',
   },
   footer: {
     position: 'absolute',
@@ -274,7 +253,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    lineHeight: 1.3,
   },
 })
 
@@ -297,6 +275,13 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
   const formatDate = (date: string | Date): string => {
     const dateObj = typeof date === 'string' ? new Date(date) : date
     return dateObj.toLocaleDateString('tr-TR')
+  }
+
+  // Safe exchange rate formatting
+  const formatExchangeRate = (rate: number | string | undefined): string => {
+    if (!rate) return '30.0000'
+    const numRate = typeof rate === 'string' ? parseFloat(rate) : rate
+    return isNaN(numRate) ? '30.0000' : numRate.toFixed(4)
   }
 
   return (
@@ -371,7 +356,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         {/* Quotation Title and Description */}
         <Text style={styles.sectionTitle}>{quotation.title}</Text>
         {quotation.description && (
-          <Text style={{ fontSize: 10, marginBottom: 15, lineHeight: 1.4, color: '#374151', backgroundColor: '#F9FAFB', padding: 10, borderRadius: 6 }}>
+          <Text style={styles.descriptionText}>
             {quotation.description}
           </Text>
         )}
@@ -398,7 +383,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
           >
             <View style={styles.productName}>
               <Text style={styles.tableCellBold}>{item.product.name}</Text>
-              <Text style={{ fontSize: 8, color: '#666' }}>
+              <Text style={styles.productType}>
                 {item.product.type === 'SOFTWARE' ? 'Yazılım' : 'Donanım'}
               </Text>
             </View>
@@ -436,7 +421,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             )}
             {exchangeRate && quotation.totalUSD && (
               <Text style={styles.exchangeRate}>
-                Döviz Kuru: {exchangeRate.toFixed(4)} TL/USD
+                Döviz Kuru: {formatExchangeRate(exchangeRate)} TL/USD
               </Text>
             )}
           </View>
