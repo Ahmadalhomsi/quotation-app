@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
 // GET /api/customers/[id] - Belirli bir müşteriyi getir
 export async function GET(

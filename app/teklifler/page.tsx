@@ -93,7 +93,7 @@ export default function QuotationsPage() {
           email: 'info@mapos.com',
           website: 'www.mapos.com'
         },
-        exchangeRate: quotation.exchangeRate || 30.0
+        exchangeRate: quotation.exchangeRate || 40.0
       })
     } catch (error) {
       console.error('PDF indirme hatası:', error)

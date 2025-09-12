@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { QuotationStatus, QuotationStatusLabels, ProductType } from '@/lib/types'
+import { QuotationStatus, QuotationStatusLabels, ProductType, Currency } from '@/lib/types'
 import { downloadQuotationPdf } from '@/lib/pdf-generator'
 
 // Types matching the API response
@@ -151,23 +151,40 @@ export default function QuotationDetailPage() {
       // Transform the API data to match the PDF generator expectations
       const pdfQuotation = {
         ...quotation,
+        description: quotation.description || undefined,
+        terms: quotation.terms || undefined,
+        notes: quotation.notes || undefined,
         validUntil: new Date(quotation.validUntil),
         createdAt: new Date(quotation.createdAt),
         updatedAt: new Date(quotation.updatedAt),
         customer: {
           ...quotation.customer,
+          address: quotation.customer.address || undefined,
+          taxNumber: quotation.customer.taxNumber || undefined,
+          taxOffice: quotation.customer.taxOffice || undefined,
           createdAt: new Date(quotation.customer.createdAt),
           updatedAt: new Date(quotation.customer.updatedAt)
         },
         items: quotation.items.map(item => ({
           id: item.id,
+          quotationId: item.quotationId,
           productId: item.productId,
           productName: item.product.name,
           productType: item.product.type,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
-          currency: item.currency
+          currency: item.currency as Currency,
+          product: {
+            ...item.product,
+            description: item.product.description || undefined,
+            currency: item.product.currency as Currency,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isActive: true
+          },
+          createdAt: new Date(),
+          updatedAt: new Date()
         }))
       }
 
@@ -180,7 +197,7 @@ export default function QuotationDetailPage() {
           email: 'info@mapos.com.tr',
           website: 'www.mapos.com.tr'
         },
-        exchangeRate: quotation.exchangeRate || 30.0
+        exchangeRate: quotation.exchangeRate || 40.0
       })
     } catch (error) {
       console.error('PDF indirme hatası:', error)

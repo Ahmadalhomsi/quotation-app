@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QuotationStatus } from '../../generated/prisma'
 
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
 // GET /api/quotations - Tüm teklifleri listele
 export async function GET(request: NextRequest) {
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Calculate totals
     let totalTL = 0
     let totalUSD = 0
-    const exchangeRate = body.exchangeRate || 30.0
+    const exchangeRate = body.exchangeRate || 40.0
 
     for (const item of body.items) {
       if (item.currency === 'TL') {

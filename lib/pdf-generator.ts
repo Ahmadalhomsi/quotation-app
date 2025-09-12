@@ -49,7 +49,7 @@ export function generatePDF(quotationData: any): void {
       taxNumber: '1234567890',
       taxOffice: 'Kadıköy'
     },
-    exchangeRate: quotationData.exchangeRate || 30.0
+    exchangeRate: quotationData.exchangeRate || 40.0
   }
   
   pdfGenerator.downloadQuotationPdf(data, `teklif-${quotationData.quotationNumber}.pdf`)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreateCustomerData } from '@/lib/types'
 
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
 
 // GET /api/customers - Tüm müşterileri listele

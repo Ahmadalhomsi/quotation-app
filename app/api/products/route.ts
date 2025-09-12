@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ProductType } from '../../generated/prisma'
 import { CreateProductData } from '@/lib/types'
 
-import { prisma } from '@/lib/prisma'
+import prisma from '@/lib/prisma'
 
 
 // GET /api/products - Tüm ürünleri listele
