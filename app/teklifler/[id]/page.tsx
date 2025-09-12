@@ -526,7 +526,7 @@ export default function QuotationDetailPage() {
                   <div className="pt-2 border-t">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Döviz Kuru:</span>
-                      <span className="font-mono">{quotation.exchangeRate.toFixed(4)}</span>
+                      <span className="font-mono">{Number(quotation.exchangeRate).toFixed(4)}</span>
                     </div>
                   </div>
                 )}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { jsPDF } from 'jspdf'
 import { PdfExportData } from './types'
 
@@ -152,9 +153,9 @@ export class PdfGenerator {
     const col4X = margin + 140
     const col6X = pageWidth - margin - 5
     
-    pdf.text('ÜRÜN / HİZMET', col1X, yPosition + 8)
-    pdf.text('MİKTAR', col2X, yPosition + 8)
-    pdf.text('BİRİM', col3X, yPosition + 8)
+    pdf.text('URUN / HIZMET', col1X, yPosition + 8)
+    pdf.text('MIKTAR', col2X, yPosition + 8)
+    pdf.text('BIRIM', col3X, yPosition + 8)
     pdf.text('P.B.', col4X, yPosition + 8)
     pdf.text('TOPLAM', col6X, yPosition + 8, { align: 'right' })
     
@@ -194,7 +195,7 @@ export class PdfGenerator {
       // Toplam - kalın ve sağa yaslı
       pdf.setFont('helvetica', 'bold')
       const totalText = item.currency === 'TL' ? 
-        `${this.formatPrice(item.totalPrice)} ₺` : 
+        `${this.formatPrice(item.totalPrice)} TL` : 
         `$${this.formatPrice(item.totalPrice)}`
       pdf.text(totalText, col6X, yPosition + 8, { align: 'right' })
 
@@ -227,7 +228,7 @@ export class PdfGenerator {
     pdf.setFontSize(10)
     
     if (quotation.totalTL) {
-      pdf.text(`TL: ${this.formatPrice(quotation.totalTL)} ₺`, pageWidth - margin - 95, totalY)
+      pdf.text(`TL: ${this.formatPrice(quotation.totalTL)} TL`, pageWidth - margin - 95, totalY)
       totalY += 8
     }
     
@@ -346,10 +347,10 @@ export class PdfGenerator {
   }
 
   /**
-   * Para formatı - Türkçe standartlarına uygun
+   * Para formatı - jsPDF uyumluluğu için İngilizce format
    */
   private formatPrice(amount: number): string {
-    return new Intl.NumberFormat('tr-TR', {
+    return new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount)
@@ -366,4 +367,23 @@ export async function generateQuotationPdf(data: PdfExportData): Promise<Blob> {
 
 export async function downloadQuotationPdf(data: PdfExportData, filename?: string): Promise<void> {
   return pdfGenerator.downloadQuotationPdf(data, filename)
+}
+
+// Simple function for direct PDF generation (compatibility)
+export function generatePDF(quotationData: any): void {
+  const data: PdfExportData = {
+    quotation: quotationData,
+    companyInfo: {
+      name: 'MAPOS',
+      address: 'İstanbul, Türkiye',
+      phone: '+90 (555) 123-4567',
+      email: 'info@mapos.com.tr',
+      website: 'www.mapos.com.tr',
+      taxNumber: '1234567890',
+      taxOffice: 'Kadıköy'
+    },
+    exchangeRate: quotationData.exchangeRate || 30.0
+  }
+  
+  pdfGenerator.downloadQuotationPdf(data, `teklif-${quotationData.quotationNumber}.pdf`)
 }
