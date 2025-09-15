@@ -40,7 +40,7 @@ model Customer {
   id          String   @id @default(cuid())
   companyName String   @map("company_name") // Şirket adı
   contactName String   @map("contact_name") // İletişim kişisi
-  email       String   @unique
+  email       String?  @unique
   phone       String?
   address     String?
   taxNumber   String?  @map("tax_number") // Vergi numarası
@@ -92,6 +92,10 @@ model Quotation {
   totalUSD        Decimal?        @db.Decimal(10, 2) @map("total_usd")
   exchangeRate    Decimal?        @db.Decimal(10, 4) @map("exchange_rate") // Kullanılan döviz kuru
   
+  // KDV bilgileri
+  kdvEnabled      Boolean?        @default(true) @map("kdv_enabled") // KDV dahil mi?
+  kdvRate         Decimal?        @default(20) @db.Decimal(5, 2) @map("kdv_rate") // KDV oranı (%)
+  
   // Notlar
   terms           String?         // Şartlar ve koşullar
   notes           String?         // Notlar
@@ -109,6 +113,7 @@ model QuotationItem {
   unitPrice   Decimal   @db.Decimal(10, 2) @map("unit_price") // Birim fiyat
   totalPrice  Decimal   @db.Decimal(10, 2) @map("total_price") // Toplam fiyat
   currency    Currency  // Para birimi
+  discount    Decimal?  @default(0) @db.Decimal(5, 2) @map("discount") // İskonto oranı (%)
   
   quotationId String    @map("quotation_id")
   quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)

@@ -103,19 +103,25 @@ export async function POST(request: NextRequest) {
     const currentYear = new Date().getFullYear()
     const quotationNumber = `TKL-${currentYear}-${nextNumber.toString().padStart(3, '0')}`
 
-    // Calculate totals
+    // Calculate totals - separate TL and USD totals
     let totalTL = 0
     let totalUSD = 0
     const exchangeRate = body.exchangeRate || 40.0
+    const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : true
+    const kdvRate = body.kdvRate || 20
 
     for (const item of body.items) {
       if (item.currency === 'TL') {
         totalTL += item.totalPrice
-        totalUSD += item.totalPrice / exchangeRate
       } else {
         totalUSD += item.totalPrice
-        totalTL += item.totalPrice * exchangeRate
       }
+    }
+
+    // Apply KDV if enabled
+    if (kdvEnabled) {
+      totalTL = totalTL * (1 + kdvRate / 100)
+      totalUSD = totalUSD * (1 + kdvRate / 100)
     }
 
     // Create quotation with items
@@ -130,6 +136,8 @@ export async function POST(request: NextRequest) {
         totalTL,
         totalUSD,
         exchangeRate,
+        kdvEnabled,
+        kdvRate,
         terms: body.terms,
         notes: body.notes,
         items: {
@@ -139,6 +147,7 @@ export async function POST(request: NextRequest) {
             unitPrice: number;
             totalPrice: number;
             currency: string;
+            discount?: number;
             productName: string;
             productType: string;
           }) => ({
@@ -147,6 +156,7 @@ export async function POST(request: NextRequest) {
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
             currency: item.currency,
+            discount: item.discount || 0,
             productName: item.productName,
             productType: item.productType
           }))

@@ -374,6 +374,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
           <Text style={[styles.tableHeaderText, styles.productName]}>ÜRÜN / HİZMET</Text>
           <Text style={[styles.tableHeaderText, styles.quantity]}>MİKTAR</Text>
           <Text style={[styles.tableHeaderText, styles.unitPrice]}>BİRİM FİYAT</Text>
+          <Text style={[styles.tableHeaderText, styles.unitPrice]}>İSKONTO</Text>
           <Text style={[styles.tableHeaderText, styles.total]}>TOPLAM</Text>
         </View>
 
@@ -391,6 +392,11 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
               <Text style={styles.productType}>
                 {item.product.type === 'SOFTWARE' ? 'Yazılım' : 'Donanım'}
               </Text>
+              {item.product.description && (
+                <Text style={[styles.productType, { marginTop: 2 }]}>
+                  {item.product.description}
+                </Text>
+              )}
             </View>
             <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
             <Text style={[styles.tableCell, styles.unitPrice]}>
@@ -398,6 +404,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                 ? `${formatPrice(item.unitPrice)} TL`
                 : `$${formatPrice(item.unitPrice)}`
               }
+            </Text>
+            <Text style={[styles.tableCell, styles.unitPrice]}>
+              {item.discount ? `%${item.discount}` : '-'}
             </Text>
             <Text style={[styles.tableCellBold, styles.total]}>
               {item.currency === 'TL' 
@@ -412,18 +421,59 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         <View style={styles.totalsSection} wrap={false}>
           <View style={styles.totalsBox}>
             <Text style={styles.totalsTitle}>TOPLAM TUTAR</Text>
+            
+            {/* Show subtotals if KDV is enabled */}
+            {quotation.kdvEnabled && (
+              <>
+                {quotation.totalTL && (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>Ara Toplam (TL):</Text>
+                    <Text style={styles.totalsValue}>
+                      {formatPrice(quotation.totalTL / (1 + (quotation.kdvRate || 20) / 100))} TL
+                    </Text>
+                  </View>
+                )}
+                {quotation.totalUSD && (
+                  <View style={styles.totalsRow}>
+                    <Text style={styles.totalsLabel}>Ara Toplam (USD):</Text>
+                    <Text style={styles.totalsValue}>
+                      ${formatPrice(quotation.totalUSD / (1 + (quotation.kdvRate || 20) / 100))}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>KDV (%{quotation.kdvRate || 20}):</Text>
+                  <Text style={styles.totalsValue}>
+                    {formatPrice((quotation.totalTL || 0) - (quotation.totalTL || 0) / (1 + (quotation.kdvRate || 20) / 100))} TL
+                  </Text>
+                </View>
+              </>
+            )}
+            
             {quotation.totalTL && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>Türk Lirası:</Text>
+                <Text style={styles.totalsLabel}>
+                  {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
+                </Text>
                 <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} TL</Text>
               </View>
             )}
             {quotation.totalUSD && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>ABD Doları:</Text>
+                <Text style={styles.totalsLabel}>
+                  {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
+                </Text>
                 <Text style={styles.totalsValue}>${formatPrice(quotation.totalUSD)}</Text>
               </View>
             )}
+            
+            {/* KDV Warning if disabled */}
+            {!quotation.kdvEnabled && (
+              <Text style={[styles.exchangeRate, { color: '#DC2626', fontWeight: 'bold', marginTop: 8 }]}>
+                ⚠️ KDV DAHİL DEĞİLDİR
+              </Text>
+            )}
+            
             {exchangeRate && quotation.totalUSD && (
               <Text style={styles.exchangeRate}>
                 Döviz Kuru: {formatExchangeRate(exchangeRate)} TL/USD

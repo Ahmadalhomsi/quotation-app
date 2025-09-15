@@ -72,6 +72,7 @@ export interface QuotationItem {
   unitPrice: number     // Birim Fiyat
   totalPrice: number    // Toplam Fiyat
   currency: Currency    // Para Birimi
+  discount?: number     // İskonto oranı (%)
   quotationId: string
   productId: string
   product: Product
@@ -86,6 +87,7 @@ export interface CreateQuotationItemData {
   quantity: number
   unitPrice: number
   currency: Currency
+  discount?: number      // İskonto oranı (%)
 }
 
 // Teklif tipleri
@@ -102,6 +104,8 @@ export interface Quotation {
   totalTL?: number        // Toplam TL
   totalUSD?: number       // Toplam USD
   exchangeRate?: number   // Döviz Kuru
+  kdvEnabled?: boolean    // KDV dahil mi?
+  kdvRate?: number       // KDV oranı (%)
   terms?: string          // Şartlar ve Koşullar
   notes?: string          // Notlar
   createdAt: Date
@@ -116,6 +120,8 @@ export interface CreateQuotationData {
   items: CreateQuotationItemData[]
   terms?: string
   notes?: string
+  kdvEnabled?: boolean    // KDV dahil mi?
+  kdvRate?: number       // KDV oranı (%)
 }
 
 // Döviz kuru tipi

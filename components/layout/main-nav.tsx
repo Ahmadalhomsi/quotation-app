@@ -8,8 +8,6 @@ import {
   Users, 
   FileText, 
   Menu,
-  DollarSign,
-  Settings,
   LogOut
 } from 'lucide-react'
 
