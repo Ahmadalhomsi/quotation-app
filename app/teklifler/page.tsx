@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/table'
 import { QuotationStatus, QuotationStatusLabels } from '@/lib/types'
 import { formatPrice, calculateTotal } from '@/lib/format'
-import { downloadQuotationPdf } from '@/lib/pdf-generator'
+import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
@@ -105,7 +105,7 @@ export default function QuotationsPage() {
 
   const handleDownloadPdf = async (quotation: any) => {
     try {
-      await downloadQuotationPdf({
+      await ReactPdfGenerator.downloadQuotationPdf({
         quotation: quotation,
         companyInfo: {
           name: 'MAPOS',

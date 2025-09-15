@@ -33,7 +33,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { QuotationStatus, QuotationStatusLabels, ProductType, Currency } from '@/lib/types'
-import { downloadQuotationPdf } from '@/lib/pdf-generator'
+import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
 // Types matching the API response
 interface QuotationDetail {
@@ -188,7 +188,7 @@ export default function QuotationDetailPage() {
         }))
       }
 
-      await downloadQuotationPdf({
+      await ReactPdfGenerator.downloadQuotationPdf({
         quotation: pdfQuotation,
         companyInfo: {
           name: 'MAPOS',
