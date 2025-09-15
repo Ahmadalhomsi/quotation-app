@@ -169,6 +169,13 @@ export function MainNav() {
 }
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  
+  // Don't show navigation on login page
+  if (pathname === '/login') {
+    return <>{children}</>
+  }
+  
   return (
     <div className="min-h-screen bg-background">
       <MainNav />

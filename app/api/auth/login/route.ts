@@ -1,8 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { rateLimiter } from '@/lib/rate-limiter'
+import { getClientIP } from '@/lib/ip-utils'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get client IP for rate limiting
+    const clientIP = getClientIP(request)
+    
+    // Check rate limit
+    const rateLimit = rateLimiter.checkRateLimit(clientIP)
+    
+    if (!rateLimit.allowed) {
+      const timeUntilReset = Math.ceil((rateLimit.resetTime - Date.now()) / 1000)
+      return NextResponse.json(
+        { 
+          error: `Çok fazla giriş denemesi. ${Math.ceil(timeUntilReset / 60)} dakika sonra tekrar deneyin.`,
+          rateLimited: true,
+          resetTime: rateLimit.resetTime
+        },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetTime.toString(),
+            'Retry-After': timeUntilReset.toString()
+          }
+        }
+      )
+    }
+    
     const { username, password } = await request.json()
     
     // Get credentials from environment
@@ -18,16 +46,20 @@ export async function POST(request: NextRequest) {
 
     console.log('Giriş denemesi:', username);
     console.log('Beklenen kullanıcı adı:', authUsername);
-    console.log('Parola:', password);
-    console.log('Parola Hashi:', authPasswordHash);
-    
-    
+    console.log('Client IP:', clientIP);
     
     // Validate credentials
     if (username !== authUsername) {
       return NextResponse.json(
         { error: 'Geçersiz kullanıcı adı veya şifre' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: {
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetTime.toString()
+          }
+        }
       )
     }
     
@@ -35,9 +67,19 @@ export async function POST(request: NextRequest) {
     if (!passwordMatch) {
       return NextResponse.json(
         { error: 'Geçersiz kullanıcı adı veya şifre' },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: {
+            'X-RateLimit-Limit': '5',
+            'X-RateLimit-Remaining': rateLimit.remaining.toString(),
+            'X-RateLimit-Reset': rateLimit.resetTime.toString()
+          }
+        }
       )
     }
+    
+    // Successful login - reset rate limit for this IP
+    rateLimiter.resetRateLimit(clientIP)
     
     // Create session data
     const sessionData = {
