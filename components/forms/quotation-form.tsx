@@ -1,0 +1,695 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Calculator } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select'
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table'
+import { CreateCustomerModal } from '@/components/modals/create-customer-modal'
+import { CreateProductModal } from '@/components/modals/create-product-modal'
+import {
+    Currency,
+    ProductType,
+    CreateQuotationData,
+    CreateQuotationItemData
+} from '@/lib/types'
+import { currencyService } from '@/lib/currency'
+
+// Types for API data
+interface Customer {
+    id: string
+    companyName: string
+    contactName: string
+    email?: string
+}
+
+interface Product {
+    id: string
+    name: string
+    price: number
+    currency: Currency
+    type: ProductType
+    description?: string
+}
+
+interface QuotationItem extends CreateQuotationItemData {
+    id: string
+    product?: Product
+    totalPrice: number
+    discount?: number
+}
+
+interface QuotationFormProps {
+    mode: 'create' | 'edit'
+    initialData?: Partial<CreateQuotationData>
+    initialItems?: QuotationItem[]
+    initialKdvEnabled?: boolean
+    initialKdvRate?: number
+    initialExchangeRate?: number
+    onSubmit: (data: CreateQuotationData, items: QuotationItem[], kdvEnabled: boolean, kdvRate: number, exchangeRate: number) => Promise<void>
+    customers: Customer[]
+    products: Product[]
+    onCustomerCreated: (customer: Customer) => void
+    onProductCreated: (product: Product) => void
+    isLoading?: boolean
+}
+
+export function QuotationForm({
+    mode,
+    initialData = {},
+    initialItems = [],
+    initialKdvEnabled = true,
+    initialKdvRate = 20,
+    initialExchangeRate = 30,
+    onSubmit,
+    customers,
+    products,
+    onCustomerCreated,
+    onProductCreated,
+    isLoading = false
+}: QuotationFormProps) {
+    const [exchangeRate, setExchangeRate] = useState<number>(initialExchangeRate)
+    const [kdvEnabled, setKdvEnabled] = useState<boolean>(initialKdvEnabled)
+    const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
+
+    const [formData, setFormData] = useState<CreateQuotationData>({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        validUntil: initialData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        customerId: initialData.customerId || '',
+        items: [],
+        terms: initialData.terms || '',
+        notes: initialData.notes || ''
+    })
+
+    const [items, setItems] = useState<QuotationItem[]>(initialItems)
+    const [newItem, setNewItem] = useState<Partial<QuotationItem>>({
+        productId: '',
+        quantity: 1,
+        unitPrice: 0,
+        currency: Currency.TL,
+        discount: 0
+    })
+
+    const [errors, setErrors] = useState<Record<string, string>>({})
+
+    // Initialize exchange rate from API on mount
+    useEffect(() => {
+        if (mode === 'create') {
+            const fetchExchangeRate = async () => {
+                try {
+                    const rate = await currencyService.getUsdToTryRate()
+                    setExchangeRate(rate)
+                } catch (error) {
+                    console.error('Döviz kuru alınamadı:', error)
+                    // Keep default rate
+                }
+            }
+            fetchExchangeRate()
+        }
+    }, [mode])
+
+    const handleProductSelect = (productId: string) => {
+        const product = products.find(p => p.id === productId)
+        if (product) {
+            setNewItem(prev => ({
+                ...prev,
+                productId,
+                unitPrice: Number(product.price),
+                currency: product.currency
+            }))
+        }
+    }
+
+    const addItem = () => {
+        if (!newItem.productId || !newItem.quantity || !newItem.unitPrice) {
+            setErrors({ items: 'Lütfen tüm ürün bilgilerini doldurun' })
+            return
+        }
+
+        const product = products.find(p => p.id === newItem.productId)
+        if (!product) return
+
+        const discountMultiplier = 1 - ((newItem.discount || 0) / 100)
+        const totalPrice = (newItem.quantity || 1) * (newItem.unitPrice || 0) * discountMultiplier
+
+        const itemToAdd: QuotationItem = {
+            id: `temp-${Date.now()}`,
+            productId: newItem.productId!,
+            quantity: newItem.quantity || 1,
+            unitPrice: newItem.unitPrice || 0,
+            currency: newItem.currency || Currency.TL,
+            discount: newItem.discount || 0,
+            totalPrice,
+            product
+        }
+
+        setItems(prev => [...prev, itemToAdd])
+        setNewItem({
+            productId: '',
+            quantity: 1,
+            unitPrice: 0,
+            currency: Currency.TL,
+            discount: 0
+        })
+        setErrors({})
+    }
+
+    const removeItem = (index: number) => {
+        setItems(prev => prev.filter((_, i) => i !== index))
+    }
+
+    const updateItemQuantity = (index: number, newQuantity: number) => {
+        setItems(prev => prev.map((item, i) => {
+            if (i === index) {
+                const discountMultiplier = 1 - ((item.discount || 0) / 100)
+                const totalPrice = newQuantity * item.unitPrice * discountMultiplier
+                return { ...item, quantity: newQuantity, totalPrice }
+            }
+            return item
+        }))
+    }
+
+    const updateItemDiscount = (index: number, newDiscount: number) => {
+        setItems(prev => prev.map((item, i) => {
+            if (i === index) {
+                const discountMultiplier = 1 - (newDiscount / 100)
+                const totalPrice = item.quantity * item.unitPrice * discountMultiplier
+                return { ...item, discount: newDiscount, totalPrice }
+            }
+            return item
+        }))
+    }
+
+    const calculateTotals = () => {
+        const kdvMultiplier = kdvEnabled ? (1 + kdvRate / 100) : 1
+
+        const totals = items.reduce((acc, item) => {
+            const itemTotal = item.totalPrice
+            if (item.currency === Currency.TL) {
+                acc.totalTL += itemTotal
+            } else {
+                acc.totalUSD += itemTotal
+            }
+            return acc
+        }, { totalTL: 0, totalUSD: 0 })
+
+        return {
+            totalTL: totals.totalTL * kdvMultiplier,
+            totalUSD: totals.totalUSD * kdvMultiplier,
+            subtotalTL: totals.totalTL,
+            subtotalUSD: totals.totalUSD,
+            kdvAmountTL: totals.totalTL * (kdvRate / 100),
+            kdvAmountUSD: totals.totalUSD * (kdvRate / 100)
+        }
+    }
+
+    const validateForm = (): boolean => {
+        const newErrors: Record<string, string> = {}
+
+        if (!formData.title.trim()) {
+            newErrors.title = 'Teklif başlığı gereklidir'
+        }
+
+        if (!formData.customerId) {
+            newErrors.customerId = 'Müşteri seçmelisiniz'
+        }
+
+        if (items.length === 0) {
+            newErrors.items = 'En az bir ürün eklemelisiniz'
+        }
+
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+
+        if (!validateForm()) {
+            return
+        }
+
+        await onSubmit(formData, items, kdvEnabled, kdvRate, exchangeRate)
+    }
+
+    const totals = calculateTotals()
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Temel Bilgiler */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Temel Bilgiler</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="title">Teklif Başlığı *</Label>
+                            <Input
+                                id="title"
+                                value={formData.title}
+                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                placeholder="Örn: POS Sistemi Teklifi"
+                                className={errors.title ? 'border-red-500' : ''}
+                            />
+                            {errors.title && (
+                                <p className="text-sm text-red-500">{errors.title}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                {mode === 'create' && (
+                                    <CreateCustomerModal onCustomerCreated={onCustomerCreated} />
+                                )}
+                            </div>
+                            <Select
+                                value={formData.customerId}
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
+                            >
+                                <SelectTrigger className={errors.customerId ? 'border-red-500' : ''}>
+                                    <SelectValue placeholder={customers.length === 0 ? "Müşteri bulunamadı" : "Müşteri seçin"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers.map((customer) => (
+                                        <SelectItem key={customer.id} value={customer.id}>
+                                            {customer.companyName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.customerId && (
+                                <p className="text-sm text-red-500">{errors.customerId}</p>
+                            )}
+                            {customers.length === 0 && (
+                                <p className="text-sm text-amber-600">
+                                    Veritabanında müşteri bulunamadı. Yeni müşteri ekleyebilirsiniz.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="description">Açıklama</Label>
+                        <Textarea
+                            id="description"
+                            value={formData.description}
+                            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                            placeholder="Teklif hakkında detaylı açıklama..."
+                            rows={3}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="validUntil">Geçerlilik Tarihi</Label>
+                        <Input
+                            id="validUntil"
+                            type="date"
+                            value={formData.validUntil instanceof Date
+                                ? formData.validUntil.toISOString().split('T')[0]
+                                : new Date(formData.validUntil).toISOString().split('T')[0]
+                            }
+                            onChange={(e) => setFormData(prev => ({
+                                ...prev,
+                                validUntil: new Date(e.target.value)
+                            }))}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* KDV ve Kur Ayarları */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>KDV ve Kur Ayarları</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="kdvEnabled"
+                                checked={kdvEnabled}
+                                onChange={(e) => setKdvEnabled(e.target.checked)}
+                                className="rounded border-gray-300"
+                            />
+                            <Label htmlFor="kdvEnabled">KDV Dahil</Label>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="kdvRate">KDV Oranı (%)</Label>
+                            <Input
+                                id="kdvRate"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={kdvRate}
+                                onChange={(e) => setKdvRate(Number(e.target.value))}
+                                disabled={!kdvEnabled}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="exchangeRate">Döviz Kuru (USD/TL)</Label>
+                            <Input
+                                id="exchangeRate"
+                                type="number"
+                                min="0"
+                                step="0.0001"
+                                value={exchangeRate}
+                                onChange={(e) => setExchangeRate(Number(e.target.value))}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Ürün Ekleme */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Ürün Ekle</CardTitle>
+                    <CardDescription>
+                        Teklife eklemek istediğiniz ürün veya hizmetleri seçin
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-6">
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                {mode === 'create' && (
+                                    <CreateProductModal onProductCreated={onProductCreated} />
+                                )}
+                            </div>
+                            <Select
+                                value={newItem.productId}
+                                onValueChange={handleProductSelect}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder={products.length === 0 ? "Ürün bulunamadı" : "Ürün seçin"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {products.map((product) => (
+                                        <SelectItem key={product.id} value={product.id}>
+                                            {product.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {products.length === 0 && (
+                                <p className="text-sm text-amber-600">
+                                    Veritabanında ürün bulunamadı. Yeni ürün ekleyebilirsiniz.
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Miktar</Label>
+                            <Input
+                                type="number"
+                                min="1"
+                                value={newItem.quantity}
+                                onChange={(e) => setNewItem(prev => ({
+                                    ...prev,
+                                    quantity: parseInt(e.target.value) || 1
+                                }))}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Birim Fiyat</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newItem.unitPrice}
+                                onChange={(e) => setNewItem(prev => ({
+                                    ...prev,
+                                    unitPrice: parseFloat(e.target.value) || 0
+                                }))}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Para Birimi</Label>
+                            <Select
+                                value={newItem.currency}
+                                onValueChange={(value: Currency) => setNewItem(prev => ({
+                                    ...prev,
+                                    currency: value
+                                }))}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={Currency.TL}>₺ TL</SelectItem>
+                                    <SelectItem value={Currency.USD}>$ USD</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>İskonto (%)</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={newItem.discount || 0}
+                                onChange={(e) => setNewItem(prev => ({
+                                    ...prev,
+                                    discount: parseFloat(e.target.value) || 0
+                                }))}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>&nbsp;</Label>
+                            <Button type="button" onClick={addItem} className="w-full">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Ekle
+                            </Button>
+                        </div>
+                    </div>
+
+                    {errors.items && (
+                        <p className="text-sm text-red-500">{errors.items}</p>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Eklenen Ürünler Tablosu */}
+            {items.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Eklenen Ürünler</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Ürün</TableHead>
+                                    <TableHead className="text-center">Miktar</TableHead>
+                                    <TableHead className="text-right">Birim Fiyat</TableHead>
+                                    <TableHead className="text-center">İskonto (%)</TableHead>
+                                    <TableHead className="text-right">Toplam</TableHead>
+                                    <TableHead className="text-center">İşlem</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {items.map((item, index) => (
+                                    <TableRow key={item.id}>
+                                        <TableCell>
+                                            <div>
+                                                <div className="font-medium">{item.product?.name}</div>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {item.product?.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex justify-center">
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 1)}
+                                                    className="w-20 text-center"
+                                                />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {item.currency === Currency.TL ? '₺' : '$'}{item.unitPrice.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex justify-center">
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.01"
+                                                    value={item.discount || 0}
+                                                    onChange={(e) => updateItemDiscount(index, parseFloat(e.target.value) || 0)}
+                                                    className="w-20 text-center"
+                                                    placeholder="0"
+                                                />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {item.currency === Currency.TL ? '₺' : '$'}{item.totalPrice.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeItem(index)}
+                                                className="text-red-600 hover:text-red-800"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            )}
+            {/* Toplam Hesap */}
+            {items.length > 0 && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center">
+                            <Calculator className="mr-2 h-5 w-5" />
+                            Toplam Hesap
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-6 md:grid-cols-2">
+                            {/* TL Totals */}
+                            {totals.totalTL > 0 && (
+                                <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <h4 className="font-semibold text-lg">Türk Lirası (₺)</h4>
+                                    {kdvEnabled && (
+                                        <>
+                                            <div className="flex justify-between">
+                                                <span>Ara Toplam:</span>
+                                                <span>₺{totals.subtotalTL.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>KDV (%{kdvRate}):</span>
+                                                <span>₺{totals.kdvAmountTL.toFixed(2)}</span>
+                                            </div>
+                                            <hr />
+                                        </>
+                                    )}
+                                    <div className="flex justify-between font-bold text-lg">
+                                        <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
+                                        <span>₺{totals.totalTL.toFixed(2)}</span>
+                                    </div>
+                                    {!kdvEnabled && (
+                                        <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* USD Totals */}
+                            {totals.totalUSD > 0 && (
+                                <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <h4 className="font-semibold text-lg">Amerikan Doları ($)</h4>
+                                    {kdvEnabled && (
+                                        <>
+                                            <div className="flex justify-between">
+                                                <span>Ara Toplam:</span>
+                                                <span>${totals.subtotalUSD.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>KDV (%{kdvRate}):</span>
+                                                <span>${totals.kdvAmountUSD.toFixed(2)}</span>
+                                            </div>
+                                            <hr />
+                                        </>
+                                    )}
+                                    <div className="flex justify-between font-bold text-lg">
+                                        <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
+                                        <span>${totals.totalUSD.toFixed(2)}</span>
+                                    </div>
+                                    {!kdvEnabled && (
+                                        <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
+                                    )}
+                                    <p className="text-sm text-muted-foreground">
+                                        Döviz Kuru: {exchangeRate.toFixed(4)} TL/USD
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Şartlar ve Notlar */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Şartlar ve Notlar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="terms">Şartlar ve Koşullar</Label>
+                        <Textarea
+                            id="terms"
+                            value={formData.terms}
+                            onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                            placeholder="Teklif ile ilgili şartlar ve koşullar..."
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="notes">Notlar</Label>
+                        <Textarea
+                            id="notes"
+                            value={formData.notes}
+                            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                            placeholder="Dahili notlar ve açıklamalar..."
+                            rows={3}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Submit Button */}
+            <div className="flex justify-end">
+                <Button type="submit" disabled={isLoading} size="lg">
+                    {isLoading ? 'İşleniyor...' : mode === 'create' ? 'Teklif Oluştur' : 'Değişiklikleri Kaydet'}
+                </Button>
+            </div>
+        </form>
+    )
+}

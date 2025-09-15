@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductType } from '../../generated/prisma'
 import { CreateProductData } from '@/lib/types'
@@ -89,8 +90,8 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ product }, { status: 201 })
-  } catch (error) {
-    console.error('Ürün oluşturulurken hata:', error)
+  } catch (error : any) {
+    console.error('Ürün oluşturulurken hata:', error.stack)
     return NextResponse.json(
       { error: 'Ürün oluşturulamadı' },
       { status: 500 }

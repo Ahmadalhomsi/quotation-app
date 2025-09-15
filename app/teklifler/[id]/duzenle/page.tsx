@@ -1,30 +1,22 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, X, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { QuotationStatus, QuotationStatusLabels, ProductType, Currency, ProductTypeLabels } from '@/lib/types'
-import { Badge } from '@/components/ui/badge'
+import { QuotationForm } from '@/components/forms/quotation-form'
+import { 
+  QuotationStatus, 
+  ProductType, 
+  Currency, 
+  CreateQuotationData 
+} from '@/lib/types'
 
 // Types matching the API response
 interface QuotationDetail {
@@ -47,6 +39,8 @@ interface QuotationDetail {
   totalTL: number | null
   totalUSD: number | null
   exchangeRate: number
+  kdvEnabled: boolean
+  kdvRate: number
   validUntil: string
   createdAt: string
   updatedAt: string
@@ -58,6 +52,7 @@ interface QuotationDetail {
     unitPrice: number
     totalPrice: number
     currency: Currency
+    discount?: number
     product: {
       id: string
       name: string
@@ -74,28 +69,28 @@ interface QuotationDetail {
 interface Product {
   id: string
   name: string
-  description: string | null
+  description?: string
   price: number
   currency: Currency
   type: ProductType
-  sku: string | null
-  isActive: boolean
 }
 
 interface Customer {
   id: string
   companyName: string
   contactName: string
-  email: string
-  phone: string | null
+  email?: string
 }
 
 interface QuotationItem {
+  id: string
   productId: string
   quantity: number
   unitPrice: number
   currency: Currency
+  discount?: number
   product?: Product
+  totalPrice: number
 }
 
 export default function EditQuotationPage() {
@@ -107,16 +102,6 @@ export default function EditQuotationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
-  // Form state
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [customerId, setCustomerId] = useState('')
-  const [validUntil, setValidUntil] = useState('')
-  const [status, setStatus] = useState<QuotationStatus>(QuotationStatus.DRAFT)
-  const [terms, setTerms] = useState('')
-  const [notes, setNotes] = useState('')
-  const [items, setItems] = useState<QuotationItem[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -142,25 +127,6 @@ export default function EditQuotationPage() {
         setProducts(productsData.products || [])
         setCustomers(customersData.customers || [])
 
-        // Initialize form state with quotation data
-        setTitle(quotationData.title)
-        setDescription(quotationData.description || '')
-        setCustomerId(quotationData.customerId)
-        setValidUntil(quotationData.validUntil.split('T')[0]) // Convert to date input format
-        setStatus(quotationData.status)
-        setTerms(quotationData.terms || '')
-        setNotes(quotationData.notes || '')
-        
-        // Convert items to form format
-        const formItems = quotationData.items.map((item: any) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          currency: item.currency,
-          product: item.product
-        }))
-        setItems(formItems)
-
       } catch (error) {
         console.error('Veriler yüklenemedi:', error)
         setError(error instanceof Error ? error.message : 'Veriler yüklenemedi')
@@ -174,66 +140,45 @@ export default function EditQuotationPage() {
     }
   }, [params.id])
 
-  const handleAddItem = () => {
-    setItems([...items, {
-      productId: '',
-      quantity: 1,
-      unitPrice: 0,
-      currency: Currency.TL
-    }])
+  const handleCustomerCreated = (customer: Customer) => {
+    setCustomers(prev => [...prev, customer])
   }
 
-  const handleRemoveItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index))
+  const handleProductCreated = (product: { 
+    id: string
+    name: string
+    description?: string
+    price: number
+    currency: Currency
+    type: ProductType
+  }) => {
+    setProducts(prev => [...prev, product])
   }
 
-  const handleItemChange = (index: number, field: keyof QuotationItem, value: any) => {
-    const newItems = [...items]
-    
-    if (field === 'productId') {
-      const product = products.find(p => p.id === value)
-      if (product) {
-        newItems[index] = {
-          ...newItems[index],
-          productId: value,
-          unitPrice: product.price,
-          currency: product.currency,
-          product
-        }
-      }
-    } else {
-      newItems[index] = { ...newItems[index], [field]: value }
-    }
-    
-    setItems(newItems)
-  }
+  const handleSubmit = async (
+    formData: CreateQuotationData, 
+    items: QuotationItem[], 
+    kdvEnabled: boolean, 
+    kdvRate: number, 
+    exchangeRate: number
+  ) => {
+    setIsSaving(true)
 
-  const calculateTotal = (currency: Currency) => {
-    return items
-      .filter(item => item.currency === currency)
-      .reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
-  }
-
-  const handleSave = async () => {
     try {
-      setIsSaving(true)
-
       const updatedQuotation = {
-        title,
-        description: description || null,
-        customerId,
-        validUntil: new Date(validUntil).toISOString(),
-        status,
-        terms: terms || null,
-        notes: notes || null,
+        ...formData,
+        kdvEnabled,
+        kdvRate,
+        exchangeRate,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: item.quantity * item.unitPrice, // Calculate totalPrice
+          totalPrice: item.totalPrice,
           currency: item.currency,
-          productName: item.product?.name || '', // Add productName
-          productType: item.product?.type || ProductType.SOFTWARE // Add productType
+          discount: item.discount || 0,
+          productName: item.product?.name || '',
+          productType: item.product?.type || ProductType.SOFTWARE
         }))
       }
 
@@ -250,12 +195,12 @@ export default function EditQuotationPage() {
         throw new Error(errorData.error || 'Teklif güncellenemedi')
       }
 
-      alert('Teklif başarıyla güncellendi')
+      alert('Teklif başarıyla güncellendi!')
       router.push(`/teklifler/${params.id}`)
 
     } catch (error) {
-      console.error('Kaydetme hatası:', error)
-      alert(error instanceof Error ? error.message : 'Teklif kaydedilirken bir hata oluştu')
+      console.error('Güncelleme hatası:', error)
+      alert(error instanceof Error ? error.message : 'Bir hata oluştu')
     } finally {
       setIsSaving(false)
     }
@@ -309,6 +254,35 @@ export default function EditQuotationPage() {
     )
   }
 
+  // Convert quotation data to the format expected by QuotationForm
+  const initialData: CreateQuotationData = {
+    title: quotation.title,
+    description: quotation.description || '',
+    customerId: quotation.customerId,
+    validUntil: new Date(quotation.validUntil),
+    terms: quotation.terms || '',
+    notes: quotation.notes || '',
+    items: []
+  }
+
+  const initialItems: QuotationItem[] = quotation.items.map(item => ({
+    id: item.id,
+    productId: item.productId,
+    quantity: Number(item.quantity),
+    unitPrice: Number(item.unitPrice),
+    currency: item.currency,
+    discount: Number(item.discount) || 0,
+    product: {
+      id: item.product.id,
+      name: item.product.name,
+      description: item.product.description || undefined,
+      price: Number(item.product.price),
+      currency: item.product.currency,
+      type: item.product.type
+    },
+    totalPrice: Number(item.totalPrice)
+  }))
+
   return (
     <div className="container mx-auto py-8">
       <div className="space-y-6">
@@ -325,258 +299,29 @@ export default function EditQuotationPage() {
               <p className="text-muted-foreground">{quotation.quotationNumber}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" asChild>
-              <Link href={`/teklifler/${quotation.id}`}>
-                <X className="mr-2 h-4 w-4" />
-                İptal
-              </Link>
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-            </Button>
-          </div>
+          <Button variant="outline" asChild>
+            <Link href={`/teklifler/${quotation.id}`}>
+              <X className="mr-2 h-4 w-4" />
+              İptal
+            </Link>
+          </Button>
         </div>
 
-        {/* Temel Bilgiler */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Temel Bilgiler</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Teklif Başlığı *</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Teklif başlığını giriniz"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="customer">Müşteri *</Label>
-                <Select value={customerId} onValueChange={setCustomerId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Müşteri seçiniz" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.companyName} - {customer.contactName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="validUntil">Geçerlilik Tarihi *</Label>
-                <Input
-                  id="validUntil"
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Durum</Label>
-                <Select value={status} onValueChange={(value: QuotationStatus) => setStatus(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(QuotationStatus).map((statusValue) => (
-                      <SelectItem key={statusValue} value={statusValue}>
-                        {QuotationStatusLabels[statusValue]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Açıklama</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Teklif açıklaması (isteğe bağlı)"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Teklif Kalemleri */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Teklif Kalemleri</CardTitle>
-              <Button onClick={handleAddItem} size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Kalem Ekle
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {items.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">Henüz teklif kalemi eklenmemiş</p>
-                <Button onClick={handleAddItem}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  İlk Kalemi Ekle
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {items.map((item, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                      <div className="md:col-span-2 space-y-2">
-                        <Label>Ürün *</Label>
-                        <Select 
-                          value={item.productId} 
-                          onValueChange={(value) => handleItemChange(index, 'productId', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Ürün seçiniz" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                <div className="flex flex-col">
-                                  <span>{product.name}</span>
-                                  <span className="text-sm text-muted-foreground">
-                                    {ProductTypeLabels[product.type]} - {product.currency === Currency.TL ? '₺' : '$'}{product.price}
-                                  </span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Miktar *</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Birim Fiyat *</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => handleItemChange(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Para Birimi</Label>
-                        <Select 
-                          value={item.currency} 
-                          onValueChange={(value: Currency) => handleItemChange(index, 'currency', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={Currency.TL}>₺ TL</SelectItem>
-                            <SelectItem value={Currency.USD}>$ USD</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Toplam</Label>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline">
-                            {item.currency === Currency.TL ? '₺' : '$'}
-                            {(item.quantity * item.unitPrice).toFixed(2)}
-                          </Badge>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveItem(index)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Toplam */}
-        {items.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Toplam Tutar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Toplam TL</Label>
-                  <div className="text-2xl font-bold">
-                    ₺{calculateTotal(Currency.TL).toFixed(2)}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Toplam USD</Label>
-                  <div className="text-2xl font-bold">
-                    ${calculateTotal(Currency.USD).toFixed(2)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Şartlar ve Notlar */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Şartlar ve Notlar</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="terms">Şartlar ve Koşullar</Label>
-              <Textarea
-                id="terms"
-                value={terms}
-                onChange={(e) => setTerms(e.target.value)}
-                placeholder="Teklif şartları ve koşulları (isteğe bağlı)"
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notlar</Label>
-              <Textarea
-                id="notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Dahili notlar (isteğe bağlı)"
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Quotation Form */}
+        <QuotationForm
+          mode="edit"
+          onSubmit={handleSubmit}
+          customers={customers}
+          products={products}
+          onCustomerCreated={handleCustomerCreated}
+          onProductCreated={handleProductCreated}
+          isLoading={isSaving}
+          initialData={initialData}
+          initialItems={initialItems}
+          initialKdvEnabled={quotation.kdvEnabled}
+          initialKdvRate={quotation.kdvRate}
+          initialExchangeRate={quotation.exchangeRate}
+        />
       </div>
     </div>
   )

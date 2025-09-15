@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     padding: 12,
-    width: 180,
+    width: 200,
     borderRadius: 4,
   },
   totalsTitle: {
@@ -200,14 +200,17 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   totalsLabel: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#374151',
     fontWeight: 'bold',
+    flex: 1,
   },
   totalsValue: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
     color: '#1F2937',
+    textAlign: 'right',
+    flex: 0.8,
   },
   exchangeRate: {
     fontSize: 7,
