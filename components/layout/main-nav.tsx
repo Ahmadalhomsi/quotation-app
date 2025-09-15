@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { 
   Package, 
   Users, 
   FileText, 
   Menu,
   DollarSign,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -41,7 +42,18 @@ const navigation = [
 
 export function MainNav() {
   const pathname = usePathname()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+      router.push('/login')
+      router.refresh()
+    } catch (error) {
+      console.error('Çıkış hatası:', error)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -116,6 +128,16 @@ export function MainNav() {
                     </Link>
                   )
                 })}
+                <button
+                  onClick={() => {
+                    setIsOpen(false)
+                    handleLogout()
+                  }}
+                  className="flex items-center space-x-3 text-sm font-medium transition-colors hover:text-foreground/80 text-foreground/60 text-left"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Çıkış</span>
+                </button>
               </nav>
             </div>
           </SheetContent>
@@ -130,7 +152,18 @@ export function MainNav() {
               <span className="font-bold">MAPOS</span>
             </Link>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-foreground/60 hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Çıkış</span>
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
