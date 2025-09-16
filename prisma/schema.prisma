@@ -59,10 +59,12 @@ model Product {
   id          String      @id @default(cuid())
   name        String      // Ürün adı
   description String?     // Açıklama
-  price       Decimal     @db.Decimal(10, 2) // Fiyat
+  price       Decimal     @db.Decimal(10, 2) // Satış fiyatı
+  purchasePrice Decimal?  @db.Decimal(10, 2) @map("purchase_price") // Alış fiyatı (maliyet)
   currency    Currency    // Para birimi (TL/USD)
   type        ProductType // Ürün tipi (Yazılım/Donanım)
   sku         String?     @unique // Stok kodu
+  photoUrl    String?     @map("photo_url") // Ürün fotoğrafı URL'i (MinIO)
   isActive    Boolean     @default(true) @map("is_active") // Aktif mi
   
   quotationItems QuotationItem[]

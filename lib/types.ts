@@ -46,10 +46,12 @@ export interface Product {
   id: string
   name: string           // Ürün Adı
   description?: string   // Açıklama
-  price: number         // Fiyat
+  price: number         // Satış Fiyatı
+  purchasePrice?: number // Alış Fiyatı (maliyet)
   currency: Currency    // Para Birimi
   type: ProductType     // Ürün Tipi
   sku?: string          // Stok Kodu
+  photoUrl?: string     // Ürün Fotoğrafı URL'i
   isActive: boolean     // Aktif mi
   createdAt: Date
   updatedAt: Date
@@ -59,9 +61,11 @@ export interface CreateProductData {
   name: string
   description?: string
   price: number
+  purchasePrice?: number
   currency: Currency
   type: ProductType
   sku?: string
+  photoUrl?: string
   isActive?: boolean
 }
 
@@ -138,9 +142,11 @@ export interface ProductFormData {
   name: string
   description: string
   price: string
+  purchasePrice: string
   currency: Currency
   type: ProductType
   sku: string
+  photo?: File
   isActive: boolean
 }
 
@@ -261,7 +267,8 @@ export const QuotationStatusLabels: Record<QuotationStatus, string> = {
 // Form validation schemas (Zod ile kullanılacak)
 export const ProductSchema = {
   name: { required: 'Ürün adı gereklidir', minLength: { value: 2, message: 'En az 2 karakter olmalı' } },
-  price: { required: 'Fiyat gereklidir', min: { value: 0.01, message: 'Fiyat 0\'dan büyük olmalı' } },
+  price: { required: 'Satış fiyatı gereklidir', min: { value: 0.01, message: 'Fiyat 0\'dan büyük olmalı' } },
+  purchasePrice: { min: { value: 0, message: 'Alış fiyatı 0\'dan küçük olamaz' } },
   currency: { required: 'Para birimi seçiniz' },
   type: { required: 'Ürün tipi seçiniz' }
 }

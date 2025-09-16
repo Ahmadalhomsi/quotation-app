@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { ProductType } from '../../generated/prisma'
-import { CreateProductData } from '@/lib/types'
+import { ProductType as PrismaProductType } from '../../generated/prisma'
+import { uploadFile, generateUniqueFilename, isValidImageType, isValidFileSize } from '@/lib/minio'
 
 import prisma from '@/lib/prisma'
 
@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get('active')
     const type = searchParams.get('type')
     
-    const where: { isActive?: boolean; type?: ProductType } = {}
+    const where: { isActive?: boolean; type?: PrismaProductType } = {}
     
     if (isActive !== null) {
       where.isActive = isActive === 'true'
     }
     
     if (type && (type === 'SOFTWARE' || type === 'HARDWARE')) {
-      where.type = type as ProductType
+      where.type = type as PrismaProductType
     }
 
     const products = await prisma.product.findMany({
@@ -48,27 +48,45 @@ export async function GET(request: NextRequest) {
 // POST /api/products - Yeni ürün oluştur
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateProductData = await request.json()
+    const formData = await request.formData()
+    
+    // Extract fields from FormData
+    const name = formData.get('name') as string
+    const description = formData.get('description') as string
+    const price = parseFloat(formData.get('price') as string)
+    const purchasePrice = formData.get('purchasePrice') ? parseFloat(formData.get('purchasePrice') as string) : null
+    const currency = formData.get('currency') as string
+    const type = formData.get('type') as string
+    const sku = formData.get('sku') as string
+    const isActive = (formData.get('isActive') as string) === 'true'
+    const photo = formData.get('photo') as File | null
     
     // Validation
-    if (!body.name || !body.price || !body.currency || !body.type) {
+    if (!name || !price || !currency || !type) {
       return NextResponse.json(
         { error: 'Ürün adı, fiyat, para birimi ve ürün tipi gereklidir' },
         { status: 400 }
       )
     }
 
-    if (body.price <= 0) {
+    if (price <= 0) {
       return NextResponse.json(
         { error: 'Fiyat 0\'dan büyük olmalıdır' },
         { status: 400 }
       )
     }
 
+    if (purchasePrice !== null && purchasePrice < 0) {
+      return NextResponse.json(
+        { error: 'Alış fiyatı 0\'dan küçük olamaz' },
+        { status: 400 }
+      )
+    }
+
     // Check if SKU already exists (only if SKU is provided and not empty)
-    if (body.sku && body.sku.trim()) {
+    if (sku && sku.trim()) {
       const existingProduct = await prisma.product.findUnique({
-        where: { sku: body.sku.trim() }
+        where: { sku: sku.trim() }
       })
 
       if (existingProduct) {
@@ -79,10 +97,57 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Clean up the data before saving
+    let photoUrl: string | null = null
+
+    // Handle photo upload if provided
+    if (photo && photo.size > 0) {
+      // Validate file type
+      if (!isValidImageType(photo.type)) {
+        return NextResponse.json(
+          { error: 'Sadece JPG, PNG ve WebP formatları desteklenir' },
+          { status: 400 }
+        )
+      }
+
+      // Validate file size (5MB max)
+      if (!isValidFileSize(photo.size)) {
+        return NextResponse.json(
+          { error: 'Fotoğraf boyutu 5MB\'dan küçük olmalıdır' },
+          { status: 400 }
+        )
+      }
+
+      try {
+        // Convert File to Buffer
+        const bytes = await photo.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        
+        // Generate unique filename
+        const filename = generateUniqueFilename(photo.name)
+        
+        // Upload to MinIO
+        photoUrl = await uploadFile(buffer, filename, photo.type)
+        console.log('Fotoğraf başarıyla yüklendi:', photoUrl)
+      } catch (uploadError) {
+        console.error('Fotoğraf yükleme hatası:', uploadError)
+        return NextResponse.json(
+          { error: 'Fotoğraf yüklenemedi' },
+          { status: 500 }
+        )
+      }
+    }
+
+    // Prepare data for database
     const productData = {
-      ...body,
-      sku: body.sku && body.sku.trim() ? body.sku.trim() : null
+      name: name.trim(),
+      description: description?.trim() || undefined,
+      price,
+      purchasePrice: purchasePrice || undefined,
+      currency: currency as any,
+      type: type as PrismaProductType,
+      sku: sku && sku.trim() ? sku.trim() : undefined,
+      photoUrl: photoUrl || undefined,
+      isActive
     }
 
     const product = await prisma.product.create({
@@ -90,7 +155,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ product }, { status: 201 })
-  } catch (error : any) {
+  } catch (error: any) {
     console.error('Ürün oluşturulurken hata:', error.stack)
     return NextResponse.json(
       { error: 'Ürün oluşturulamadı' },
