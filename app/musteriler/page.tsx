@@ -88,7 +88,7 @@ export default function CustomersPage() {
     )
   })
 
-  const handleDelete = async (customerId: string, companyName: string) => {
+  const handleDelete = async (customerId: string) => {
 
     try {
       const response = await fetch(`/api/customers/${customerId}`, {
@@ -299,7 +299,7 @@ export default function CustomersPage() {
                           variant="ghost" 
                           size="sm" 
                           className="text-red-600 hover:text-red-800"
-                          onClick={() => handleDelete(customer.id, customer.companyName)}
+                          onClick={() => handleDelete(customer.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

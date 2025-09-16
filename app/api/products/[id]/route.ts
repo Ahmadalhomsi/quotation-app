@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductType as PrismaProductType } from '../../../generated/prisma'
 import { uploadFile, generateUniqueFilename, isValidImageType, isValidFileSize, deleteFile, extractFilenameFromUrl } from '@/lib/minio'
-
 import prisma from '@/lib/prisma'
 
 // GET /api/products/[id] - Tek ürünü getir
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -54,10 +53,10 @@ export async function GET(
 // PUT /api/products/[id] - Ürünü güncelle
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     // Get current product
     const existingProduct = await prisma.product.findUnique({
@@ -213,7 +212,7 @@ export async function PUT(
 
     return NextResponse.json({ product })
   } catch (error: unknown) {
-    console.error('Ürün güncellenirken hata:', error)
+    console.error('Ürün güncellenirken hata:', error instanceof Error ? error.stack : error)
     return NextResponse.json(
       { error: 'Ürün güncellenemedi' },
       { status: 500 }
@@ -224,10 +223,10 @@ export async function PUT(
 // DELETE /api/products/[id] - Ürünü sil
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     // Get product to delete associated photo
     const product = await prisma.product.findUnique({
