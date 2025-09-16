@@ -1,10 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Save, Building, User, Mail, Phone, FileText } from 'lucide-react'
-import { toast } from 'sonner'
+import { useParams, useRouter } from 'next/navigation'
+import { 
+  ArrowLeft,
+  Building,
+  Mail,
+  FileText,
+  Save
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -17,12 +22,36 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { CreateCustomerData } from '@/lib/types'
 
-export default function NewCustomerPage() {
+interface Customer {
+  id: string
+  companyName: string
+  contactName: string
+  email: string | null
+  phone: string
+  address: string | null
+  taxNumber: string | null
+  taxOffice: string | null
+}
+
+interface UpdateCustomerData {
+  companyName: string
+  contactName: string
+  email: string
+  phone: string
+  address: string
+  taxNumber: string
+  taxOffice: string
+}
+
+export default function EditCustomerPage() {
+  const params = useParams()
   const router = useRouter()
+  const customerId = params.id as string
+  
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState<CreateCustomerData>({
+  const [isLoadingData, setIsLoadingData] = useState(true)
+  const [formData, setFormData] = useState<UpdateCustomerData>({
     companyName: '',
     contactName: '',
     email: '',
@@ -33,6 +62,43 @@ export default function NewCustomerPage() {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Fetch existing customer data
+  useEffect(() => {
+    const fetchCustomer = async () => {
+      try {
+        setIsLoadingData(true)
+        const response = await fetch(`/api/customers/${customerId}`)
+        
+        if (!response.ok) {
+          throw new Error('Müşteri bilgileri alınamadı')
+        }
+        
+        const data = await response.json()
+        const customer: Customer = data.customer
+        
+        setFormData({
+          companyName: customer.companyName,
+          contactName: customer.contactName,
+          email: customer.email || '',
+          phone: customer.phone,
+          address: customer.address || '',
+          taxNumber: customer.taxNumber || '',
+          taxOffice: customer.taxOffice || ''
+        })
+      } catch (error) {
+        console.error('Müşteri yüklenemedi:', error)
+        alert('Müşteri bilgileri yüklenemedi')
+        router.push('/musteriler')
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    if (customerId) {
+      fetchCustomer()
+    }
+  }, [customerId, router])
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -75,8 +141,8 @@ export default function NewCustomerPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
         },
@@ -85,24 +151,23 @@ export default function NewCustomerPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Müşteri oluşturulamadı')
+        throw new Error(errorData.error || 'Müşteri güncellenemedi')
       }
 
       const result = await response.json()
-      console.log('Müşteri başarıyla oluşturuldu:', result)
+      console.log('Müşteri başarıyla güncellendi:', result)
       
-      toast.success('Müşteri başarıyla oluşturuldu')
-      // Başarılı olursa müşteriler sayfasına yönlendir
-      router.push('/musteriler')
+      // Başarılı olursa müşteri detay sayfasına yönlendir
+      router.push(`/musteriler/${customerId}`)
     } catch (error) {
-      console.error('Müşteri oluşturma hatası:', error)
-      toast.error(error instanceof Error ? error.message : 'Müşteri oluşturulurken bir hata oluştu')
+      console.error('Müşteri güncelleme hatası:', error)
+      alert(error instanceof Error ? error.message : 'Müşteri güncellenirken bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleInputChange = (field: keyof CreateCustomerData, value: string) => {
+  const handleInputChange = (field: keyof UpdateCustomerData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -117,20 +182,39 @@ export default function NewCustomerPage() {
     }
   }
 
+  if (isLoadingData) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/musteriler">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Geri
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Müşteri Düzenle</h1>
+            <p className="text-muted-foreground">Yükleniyor...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Başlık ve Navigation */}
       <div className="flex items-center space-x-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/musteriler">
+          <Link href={`/musteriler/${customerId}`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Geri
           </Link>
         </Button>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Yeni Müşteri Ekle</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Müşteri Düzenle</h1>
           <p className="text-muted-foreground">
-            Yeni müşteri kaydı oluşturun
+            {formData.companyName} bilgilerini güncelleyin
           </p>
         </div>
       </div>
@@ -147,7 +231,7 @@ export default function NewCustomerPage() {
                   <span>Şirket Bilgileri</span>
                 </CardTitle>
                 <CardDescription>
-                  Temel şirket bilgilerini girin
+                  Şirket bilgilerini güncelleyin
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -161,7 +245,7 @@ export default function NewCustomerPage() {
                     className={errors.companyName ? 'border-red-500' : ''}
                   />
                   {errors.companyName && (
-                    <p className="text-sm text-red-500">{errors.companyName}</p>
+                    <p className="text-sm text-red-600">{errors.companyName}</p>
                   )}
                 </div>
 
@@ -175,7 +259,7 @@ export default function NewCustomerPage() {
                     className={errors.contactName ? 'border-red-500' : ''}
                   />
                   {errors.contactName && (
-                    <p className="text-sm text-red-500">{errors.contactName}</p>
+                    <p className="text-sm text-red-600">{errors.contactName}</p>
                   )}
                 </div>
               </CardContent>
@@ -195,17 +279,17 @@ export default function NewCustomerPage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="email">E-posta Adresi</Label>
+                    <Label htmlFor="email">E-posta</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="ornek@sirket.com"
+                      placeholder="ornek@email.com"
                       className={errors.email ? 'border-red-500' : ''}
                     />
                     {errors.email && (
-                      <p className="text-sm text-red-500">{errors.email}</p>
+                      <p className="text-sm text-red-600">{errors.email}</p>
                     )}
                   </div>
 
@@ -215,11 +299,11 @@ export default function NewCustomerPage() {
                       id="phone"
                       value={formData.phone}
                       onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+90 212 123 45 67"
+                      placeholder="+90 555 123 45 67"
                       className={errors.phone ? 'border-red-500' : ''}
                     />
                     {errors.phone && (
-                      <p className="text-sm text-red-500">{errors.phone}</p>
+                      <p className="text-sm text-red-600">{errors.phone}</p>
                     )}
                   </div>
                 </div>
@@ -255,13 +339,13 @@ export default function NewCustomerPage() {
                     <Input
                       id="taxNumber"
                       value={formData.taxNumber}
-                      onChange={(e) => handleInputChange('taxNumber', e.target.value.replace(/\D/g, ''))}
+                      onChange={(e) => handleInputChange('taxNumber', e.target.value)}
                       placeholder="1234567890"
                       maxLength={10}
                       className={errors.taxNumber ? 'border-red-500' : ''}
                     />
                     {errors.taxNumber && (
-                      <p className="text-sm text-red-500">{errors.taxNumber}</p>
+                      <p className="text-sm text-red-600">{errors.taxNumber}</p>
                     )}
                   </div>
 
@@ -271,7 +355,7 @@ export default function NewCustomerPage() {
                       id="taxOffice"
                       value={formData.taxOffice}
                       onChange={(e) => handleInputChange('taxOffice', e.target.value)}
-                      placeholder="Örn: Maslak V.D."
+                      placeholder="Kadıköy"
                     />
                   </div>
                 </div>
@@ -287,40 +371,35 @@ export default function NewCustomerPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">
-                      {formData.companyName || 'Şirket adı girilmedi'}
-                    </span>
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">Şirket:</span>
+                    <br />
+                    <span>{formData.companyName || 'Belirtilmemiş'}</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {formData.contactName || 'İletişim kişisi girilmedi'}
-                    </span>
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">Kişi:</span>
+                    <br />
+                    <span>{formData.contactName || 'Belirtilmemiş'}</span>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {formData.email || 'E-posta girilmedi'}
-                    </span>
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">E-posta:</span>
+                    <br />
+                    <span>{formData.email || 'Belirtilmemiş'}</span>
                   </div>
                   
-                  {formData.phone && (
-                    <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{formData.phone}</span>
-                    </div>
-                  )}
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">Telefon:</span>
+                    <br />
+                    <span>{formData.phone || 'Belirtilmemiş'}</span>
+                  </div>
                   
-                  {formData.taxNumber && (
-                    <div className="flex items-center space-x-2">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">VN: {formData.taxNumber}</span>
-                    </div>
-                  )}
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">V. No:</span>
+                    <br />
+                    <span>{formData.taxNumber || 'Belirtilmemiş'}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -331,10 +410,10 @@ export default function NewCustomerPage() {
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
                 <ul className="space-y-2">
-                  <li>• Şirket adı ve iletişim kişisi zorunludur</li>
-                  <li>• E-posta adresi teklif gönderimi için gereklidir</li>
-                  <li>• Vergi bilgileri fatura düzenleme için kullanılır</li>
-                  <li>• Tüm bilgiler daha sonra düzenlenebilir</li>
+                  <li>• * ile işaretli alanlar zorunludur</li>
+                  <li>• E-posta adresi teklif gönderimi için kullanılır</li>
+                  <li>• Vergi bilgileri fatura düzenleme için gereklidir</li>
+                  <li>• Tüm bilgiler güvenli olarak saklanır</li>
                 </ul>
               </CardContent>
             </Card>
@@ -344,18 +423,18 @@ export default function NewCustomerPage() {
         {/* Form Actions */}
         <div className="flex items-center justify-end space-x-4 pt-6 border-t">
           <Button type="button" variant="outline" asChild>
-            <Link href="/musteriler">İptal</Link>
+            <Link href={`/musteriler/${customerId}`}>İptal</Link>
           </Button>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
-                Kaydediliyor...
+                Güncelleniyor...
               </>
             ) : (
               <>
                 <Save className="mr-2 h-4 w-4" />
-                Müşteriyi Kaydet
+                Değişiklikleri Kaydet
               </>
             )}
           </Button>

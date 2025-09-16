@@ -13,6 +13,7 @@ import {
   Mail,
   Phone
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -88,23 +89,33 @@ export default function CustomersPage() {
   })
 
   const handleDelete = async (customerId: string, companyName: string) => {
-    if (!confirm(`"${companyName}" müşterisini silmek istediğinizden emin misiniz?`)) return
 
     try {
       const response = await fetch(`/api/customers/${customerId}`, {
         method: 'DELETE'
       })
 
+      if (response.status === 409) {
+        toast.error('Bu müşteriye ait teklifler bulunduğu için silinemez')
+        return
+      }
+
+      if (response.status === 404) {
+        toast.error('Müşteri bulunamadı')
+        return
+      }
+
       if (!response.ok) {
-        throw new Error('Müşteri silinemedi')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Müşteri silinemedi')
       }
 
       // Remove from local state
       setCustomers(prev => prev.filter(c => c.id !== customerId))
-      alert('Müşteri başarıyla silindi')
+      toast.success('Müşteri başarıyla silindi')
     } catch (error) {
       console.error('Müşteri silme hatası:', error)
-      alert('Müşteri silinirken bir hata oluştu')
+      toast.error('Müşteri silinirken bir hata oluştu')
     }
   }
 
