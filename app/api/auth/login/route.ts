@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
         // Get credentials from environment
         const authUsername = process.env.AUTH_USERNAME
-        const authPasswordHash = process.env.AUTH_PASSWORD_HASH
+        const authPasswordHash = "$2b$12$n7de3rVyG0vCXcYFf0AgKe7bywMMZQjV06bSYd42CDu4Sr3hYiQJK"
 
         if (!authUsername || !authPasswordHash) {
             return NextResponse.json(
