@@ -1,5 +1,5 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet, pdf, Font } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, pdf, Font, Image } from '@react-pdf/renderer'
 import { PdfExportData } from './types'
 
 // Register fonts
@@ -160,6 +160,16 @@ const styles = StyleSheet.create({
   },
   productName: {
     flex: 3.5,
+    flexDirection: 'row',
+  },
+  productInfo: {
+    flex: 1,
+  },
+  productImage: {
+    width: 40,
+    height: 40,
+    marginRight: 8,
+    borderRadius: 4,
   },
   quantity: {
     flex: 1,
@@ -391,15 +401,24 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             ]}
           >
             <View style={styles.productName}>
-              <Text style={styles.tableCellBold}>{item.product.name}</Text>
-              <Text style={styles.productType}>
-                {item.product.type === 'SOFTWARE' ? 'Yazılım' : 'Donanım'}
-              </Text>
-              {item.product.description && (
-                <Text style={[styles.productType, { marginTop: 2 }]}>
-                  {item.product.description}
-                </Text>
+              {item.product.photoUrl && (
+                // eslint-disable-next-line jsx-a11y/alt-text
+                <Image 
+                  style={styles.productImage} 
+                  src={item.product.photoUrl}
+                />
               )}
+              <View style={styles.productInfo}>
+                <Text style={styles.tableCellBold}>{item.product.name}</Text>
+                <Text style={styles.productType}>
+                  {item.product.type === 'SOFTWARE' ? 'Yazılım' : 'Donanım'}
+                </Text>
+                {item.product.description && (
+                  <Text style={[styles.productType, { marginTop: 2 }]}>
+                    {item.product.description}
+                  </Text>
+                )}
+              </View>
             </View>
             <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
             <Text style={[styles.tableCell, styles.unitPrice]}>

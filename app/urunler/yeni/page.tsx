@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Save, Package, FileText, DollarSign, Upload, X, ImageIcon } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -153,11 +154,12 @@ export default function NewProductPage() {
       const result = await response.json()
       console.log('Ürün başarıyla oluşturuldu:', result)
       
+      toast.success('Ürün başarıyla oluşturuldu')
       // Başarılı olursa ürünler sayfasına yönlendir
       router.push('/urunler')
     } catch (error) {
       console.error('Ürün oluşturma hatası:', error)
-      alert(error instanceof Error ? error.message : 'Ürün oluşturulurken bir hata oluştu')
+      toast.error(error instanceof Error ? error.message : 'Ürün oluşturulurken bir hata oluştu')
     } finally {
       setIsLoading(false)
     }
@@ -359,22 +361,24 @@ export default function NewProductPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {previewUrl ? (
-                  <div className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={previewUrl}
-                      alt="Ürün önizlemesi"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={handleRemovePhoto}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  <div className="relative flex justify-center">
+                    <div className="relative w-64 h-64 border rounded-lg overflow-hidden bg-muted">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewUrl}
+                        alt="Ürün önizlemesi"
+                        className="w-full h-full object-contain"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemovePhoto}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div

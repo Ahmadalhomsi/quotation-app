@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   ArrowLeft, 
   Edit, 
@@ -14,6 +15,7 @@ import {
   Eye,
   Trash2
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -76,6 +78,7 @@ interface QuotationDetail {
       price: number
       currency: string
       description: string | null
+      photoUrl?: string | null
     }
   }>
   terms: string | null
@@ -178,6 +181,7 @@ export default function QuotationDetailPage() {
           product: {
             ...item.product,
             description: item.product.description || undefined,
+            photoUrl: item.product.photoUrl || undefined,
             currency: item.product.currency as Currency,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -201,7 +205,7 @@ export default function QuotationDetailPage() {
       })
     } catch (error) {
       console.error('PDF indirme hatası:', error)
-      alert('PDF indirilemedi. Lütfen tekrar deneyin.')
+      toast.error('PDF indirilemedi. Lütfen tekrar deneyin.')
     }
   }
 
@@ -217,11 +221,11 @@ export default function QuotationDetailPage() {
         throw new Error('Silme işlemi başarısız')
       }
 
-      alert('Teklif başarıyla silindi')
+      toast.success('Teklif başarıyla silindi')
       router.push('/teklifler')
     } catch (error) {
       console.error('Silme hatası:', error)
-      alert('Teklif silinirken bir hata oluştu')
+      toast.error('Teklif silinirken bir hata oluştu')
     }
   }
 
@@ -456,10 +460,28 @@ export default function QuotationDetailPage() {
                   {quotation.items.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{item.product.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {item.product.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
+                        <div className="flex items-center space-x-3">
+                          {item.product.photoUrl && (
+                            <div className="w-12 h-12 border rounded overflow-hidden bg-muted flex-shrink-0">
+                              <Image 
+                                src={item.product.photoUrl} 
+                                alt={item.product.name}
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium">{item.product.name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {item.product.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
+                            </div>
+                            {item.product.description && (
+                              <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {item.product.description}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </TableCell>

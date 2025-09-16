@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   Package, 
   Plus, 
@@ -10,6 +11,7 @@ import {
   Trash2,
   Eye
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -44,9 +46,11 @@ interface Product {
   name: string
   description: string | null
   price: number
+  purchasePrice?: number | null
   currency: Currency
   type: ProductType
   sku: string | null
+  photoUrl?: string | null
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -111,16 +115,27 @@ export default function ProductsPage() {
         method: 'DELETE'
       })
 
+      if (response.status === 409) {
+        toast.error('Bu ürüne ait teklifler bulunduğu için silinemez')
+        return
+      }
+
+      if (response.status === 404) {
+        toast.error('Ürün bulunamadı')
+        return
+      }
+
       if (!response.ok) {
-        throw new Error('Ürün silinemedi')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Ürün silinemedi')
       }
 
       // Remove from local state
       setProducts(prev => prev.filter(p => p.id !== productId))
-      alert('Ürün başarıyla silindi')
+      toast.success('Ürün başarıyla silindi')
     } catch (error) {
       console.error('Ürün silme hatası:', error)
-      alert('Ürün silinirken bir hata oluştu')
+      toast.error('Ürün silinirken bir hata oluştu')
     }
   }
 
@@ -282,7 +297,8 @@ export default function ProductsPage() {
                 <TableRow>
                   <TableHead>Ürün Bilgileri</TableHead>
                   <TableHead>Tür</TableHead>
-                  <TableHead>Fiyat</TableHead>
+                  <TableHead>Satış Fiyatı</TableHead>
+                  <TableHead>Alış Fiyatı</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Durum</TableHead>
                   <TableHead>Kayıt Tarihi</TableHead>
@@ -293,13 +309,26 @@ export default function ProductsPage() {
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="font-medium">{product.name}</div>
-                        {product.description && (
-                          <div className="text-sm text-muted-foreground line-clamp-2">
-                            {product.description}
+                      <div className="flex items-center space-x-3">
+                        {product.photoUrl && (
+                          <div className="w-10 h-10 border rounded overflow-hidden bg-muted flex-shrink-0">
+                            <Image 
+                              src={product.photoUrl} 
+                              alt={product.name}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-contain"
+                            />
                           </div>
                         )}
+                        <div className="space-y-1">
+                          <div className="font-medium">{product.name}</div>
+                          {product.description && (
+                            <div className="text-sm text-muted-foreground line-clamp-2">
+                              {product.description}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -309,6 +338,12 @@ export default function ProductsPage() {
                     </TableCell>
                     <TableCell className="font-mono">
                       {formatPrice(Number(product.price), product.currency)}
+                    </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                      {product.purchasePrice 
+                        ? formatPrice(Number(product.purchasePrice), product.currency)
+                        : 'Belirtilmemiş'
+                      }
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {product.sku || 'Yok'}
