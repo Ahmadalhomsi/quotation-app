@@ -38,7 +38,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Currency, ProductType, ProductTypeLabels } from '@/lib/types'
+import { Currency } from '@/lib/types'
 
 // Types for API data
 interface Product {
@@ -48,7 +48,6 @@ interface Product {
   price: number
   purchasePrice?: number | null
   currency: Currency
-  type: ProductType
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
@@ -59,7 +58,6 @@ interface Product {
 export default function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
-  const [typeFilter, setTypeFilter] = useState<'all' | ProductType>('all')
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -73,10 +71,6 @@ export default function ProductsPage() {
         
         if (statusFilter !== 'all') {
           params.append('active', statusFilter === 'active' ? 'true' : 'false')
-        }
-        
-        if (typeFilter !== 'all') {
-          params.append('type', typeFilter)
         }
 
         const response = await fetch(`/api/products?${params.toString()}`)
@@ -96,7 +90,7 @@ export default function ProductsPage() {
     }
 
     fetchProducts()
-  }, [statusFilter, typeFilter])
+  }, [statusFilter])
 
   const filteredProducts = products.filter(product => {
     const searchLower = searchTerm.toLowerCase()
@@ -251,16 +245,6 @@ export default function ProductsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={typeFilter} onValueChange={(value: 'all' | ProductType) => setTypeFilter(value)}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Tür" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tüm Türler</SelectItem>
-                <SelectItem value={ProductType.SOFTWARE}>Yazılım</SelectItem>
-                <SelectItem value={ProductType.HARDWARE}>Donanım</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -280,7 +264,7 @@ export default function ProductsPage() {
                 {products.length === 0 ? 'Henüz ürün eklenmemiş' : 'Ürün bulunamadı'}
               </h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm || statusFilter !== 'all' || typeFilter !== 'all'
+                {searchTerm || statusFilter !== 'all'
                   ? 'Arama/filtre kriterlerinizi değiştirmeyi deneyin'
                   : 'Veritabanında ürün bulunamadı. İlk ürününüzü ekleyin.'}
               </p>
@@ -330,11 +314,6 @@ export default function ProductsPage() {
                           )}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {ProductTypeLabels[product.type]}
-                      </Badge>
                     </TableCell>
                     <TableCell className="font-mono">
                       {formatPrice(Number(product.price), product.currency)}

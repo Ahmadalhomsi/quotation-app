@@ -32,13 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Currency, ProductType } from '@/lib/types'
-
-// Labels for ProductType enum
-const ProductTypeLabels = {
-  [ProductType.SOFTWARE]: 'Yazılım',
-  [ProductType.HARDWARE]: 'Donanım'
-}
+import { Currency } from '@/lib/types'
 
 interface Product {
   id: string
@@ -47,7 +41,6 @@ interface Product {
   price: number
   purchasePrice?: number | null
   currency: Currency
-  type: ProductType
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
@@ -59,7 +52,6 @@ interface UpdateProductData {
   price: number
   purchasePrice?: number
   currency: Currency
-  type: ProductType
   sku: string
   isActive: boolean
 }
@@ -81,7 +73,6 @@ export default function EditProductPage() {
     price: 0,
     purchasePrice: 0,
     currency: Currency.TL,
-    type: ProductType.SOFTWARE,
     sku: '',
     isActive: true
   })
@@ -108,7 +99,6 @@ export default function EditProductPage() {
           price: Number(product.price),
           purchasePrice: product.purchasePrice ? Number(product.purchasePrice) : 0,
           currency: product.currency,
-          type: product.type,
           sku: product.sku || '',
           isActive: product.isActive
         })
@@ -221,7 +211,6 @@ export default function EditProductPage() {
         submitData.append('purchasePrice', formData.purchasePrice.toString())
       }
       submitData.append('currency', formData.currency)
-      submitData.append('type', formData.type)
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
       
@@ -257,7 +246,7 @@ export default function EditProductPage() {
     }
   }
 
-  const handleInputChange = (field: keyof UpdateProductData, value: string | number | boolean | Currency | ProductType) => {
+  const handleInputChange = (field: keyof UpdateProductData, value: string | number | boolean | Currency) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -358,22 +347,7 @@ export default function EditProductPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Ürün Türü *</Label>
-                    <Select value={formData.type} onValueChange={(value: ProductType) => handleInputChange('type', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Ürün türü seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ProductTypeLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="grid gap-4 md:grid-cols-2">                 
 
                   <div className="space-y-2">
                     <Label htmlFor="sku">SKU (Stok Kodu)</Label>
@@ -605,11 +579,6 @@ export default function EditProductPage() {
                     <span className="font-medium text-muted-foreground">Ürün:</span>
                     <br />
                     <span>{formData.name || 'Belirtilmemiş'}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium text-muted-foreground">Tür:</span>
-                    <br />
-                    <span>{ProductTypeLabels[formData.type]}</span>
                   </div>
                   <div>
                     <span className="font-medium text-muted-foreground">Fiyat:</span>

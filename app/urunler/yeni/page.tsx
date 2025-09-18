@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Save, Package, FileText, DollarSign, Upload, X, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Save, Package, DollarSign, Upload, X, ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Currency, ProductType, CreateProductData, ProductTypeLabels, CurrencyLabels } from '@/lib/types'
+import { Currency, CreateProductData, CurrencyLabels } from '@/lib/types'
 
 export default function NewProductPage() {
   const router = useRouter()
@@ -38,7 +38,6 @@ export default function NewProductPage() {
     price: 0,
     purchasePrice: 0,
     currency: Currency.TL,
-    type: ProductType.SOFTWARE,
     sku: '',
     isActive: true
   })
@@ -132,7 +131,6 @@ export default function NewProductPage() {
         submitData.append('purchasePrice', formData.purchasePrice.toString())
       }
       submitData.append('currency', formData.currency)
-      submitData.append('type', formData.type)
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
       
@@ -164,7 +162,7 @@ export default function NewProductPage() {
     }
   }
 
-  const handleInputChange = (field: keyof CreateProductData, value: string | number | boolean | Currency | ProductType) => {
+  const handleInputChange = (field: keyof CreateProductData, value: string | number | boolean | Currency) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -239,24 +237,6 @@ export default function NewProductPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="type">Ürün Tipi *</Label>
-                    <Select
-                      value={formData.type}
-                      onValueChange={(value) => handleInputChange('type', value as ProductType)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Tip seçin" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(ProductTypeLabels).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="sku">SKU / Stok Kodu</Label>
@@ -432,13 +412,6 @@ export default function NewProductPage() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">
                       {formData.name || 'Ürün adı girilmedi'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      {ProductTypeLabels[formData.type]}
                     </span>
                   </div>
                   

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ProductType as PrismaProductType } from '../../../generated/prisma'
 import { uploadFile, generateUniqueFilename, isValidImageType, isValidFileSize, deleteFile, extractFilenameFromUrl } from '@/lib/minio'
 import prisma from '@/lib/prisma'
 
@@ -194,7 +193,6 @@ export async function PUT(
       price,
       purchasePrice: purchasePrice || null,
       currency: currency as 'TL' | 'USD',
-      type: type as PrismaProductType,
       sku: sku && sku.trim() ? sku.trim() : null,
       photoUrl,
       isActive

@@ -26,13 +26,9 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Currency, ProductType } from '@/lib/types'
+import { Currency } from '@/lib/types'
 
-// Labels for ProductType enum
-const ProductTypeLabels = {
-  [ProductType.SOFTWARE]: 'Yazılım',
-  [ProductType.HARDWARE]: 'Donanım'
-}
+
 
 interface Product {
   id: string
@@ -41,7 +37,6 @@ interface Product {
   price: number
   purchasePrice?: number | null
   currency: Currency
-  type: ProductType
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
@@ -253,9 +248,6 @@ export default function ProductDetailPage() {
                   <div>
                     <h2 className="text-2xl font-semibold">{product.name}</h2>
                     <div className="flex items-center space-x-2 mt-2">
-                      <Badge variant="outline">
-                        {ProductTypeLabels[product.type]}
-                      </Badge>
                       <Badge variant={product.isActive ? 'default' : 'secondary'}>
                         {product.isActive ? (
                           <>

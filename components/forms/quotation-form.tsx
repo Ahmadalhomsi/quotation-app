@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Calculator, GripVertical } from 'lucide-react'
-import { toast } from 'sonner'
 import {
     DndContext,
     closestCenter,
