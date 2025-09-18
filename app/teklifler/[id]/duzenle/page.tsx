@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -11,11 +12,10 @@ import {
   CardContent,
 } from '@/components/ui/card'
 import { QuotationForm } from '@/components/forms/quotation-form'
-import { 
-  QuotationStatus, 
-  ProductType, 
-  Currency, 
-  CreateQuotationData 
+import {
+  QuotationStatus,
+  Currency,
+  CreateQuotationData
 } from '@/lib/types'
 
 // Types matching the API response
@@ -56,7 +56,6 @@ interface QuotationDetail {
     product: {
       id: string
       name: string
-      type: ProductType
       price: number
       currency: Currency
       description: string | null
@@ -72,7 +71,6 @@ interface Product {
   description?: string
   price: number
   currency: Currency
-  type: ProductType
 }
 
 interface Customer {
@@ -107,7 +105,7 @@ export default function EditQuotationPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        
+
         // Fetch quotation, products, and customers in parallel
         const [quotationRes, productsRes, customersRes] = await Promise.all([
           fetch(`/api/quotations/${params.id}`),
@@ -144,22 +142,21 @@ export default function EditQuotationPage() {
     setCustomers(prev => [...prev, customer])
   }
 
-  const handleProductCreated = (product: { 
+  const handleProductCreated = (product: {
     id: string
     name: string
     description?: string
     price: number
     currency: Currency
-    type: ProductType
   }) => {
     setProducts(prev => [...prev, product])
   }
 
   const handleSubmit = async (
-    formData: CreateQuotationData, 
-    items: QuotationItem[], 
-    kdvEnabled: boolean, 
-    kdvRate: number, 
+    formData: CreateQuotationData,
+    items: QuotationItem[],
+    kdvEnabled: boolean,
+    kdvRate: number,
     exchangeRate: number
   ) => {
     setIsSaving(true)
@@ -178,7 +175,6 @@ export default function EditQuotationPage() {
           currency: item.currency,
           discount: item.discount || 0,
           productName: item.product?.name || '',
-          productType: item.product?.type || ProductType.SOFTWARE
         }))
       }
 
@@ -195,12 +191,12 @@ export default function EditQuotationPage() {
         throw new Error(errorData.error || 'Teklif güncellenemedi')
       }
 
-      alert('Teklif başarıyla güncellendi!')
+      toast.success('Teklif başarıyla güncellendi!')
       router.push(`/teklifler/${params.id}`)
 
     } catch (error) {
       console.error('Güncelleme hatası:', error)
-      alert(error instanceof Error ? error.message : 'Bir hata oluştu')
+      toast.error(error instanceof Error ? error.message : 'Bir hata oluştu')
     } finally {
       setIsSaving(false)
     }
@@ -278,7 +274,6 @@ export default function EditQuotationPage() {
       description: item.product.description || undefined,
       price: Number(item.product.price),
       currency: item.product.currency,
-      type: item.product.type
     },
     totalPrice: Number(item.totalPrice)
   }))

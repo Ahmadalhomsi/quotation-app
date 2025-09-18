@@ -13,6 +13,7 @@ import {
   Calendar,
   DollarSign
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -95,11 +96,11 @@ export default function QuotationsPage() {
       } else {
         const errorData = await response.json()
         console.error('Durum güncellenemedi:', errorData.error)
-        alert('Durum güncellenemedi: ' + errorData.error)
+        toast.error('Durum güncellenemedi: ' + errorData.error)
       }
     } catch (error) {
       console.error('Durum güncelleme hatası:', error)
-      alert('Durum güncellenirken bir hata oluştu')
+      toast.error('Durum güncellenirken bir hata oluştu')
     }
   }
 
@@ -118,7 +119,7 @@ export default function QuotationsPage() {
       })
     } catch (error) {
       console.error('PDF indirme hatası:', error)
-      alert('PDF indirilemedi. Lütfen tekrar deneyin.')
+      toast.error('PDF indirilemedi. Lütfen tekrar deneyin.')
     }
   }
 

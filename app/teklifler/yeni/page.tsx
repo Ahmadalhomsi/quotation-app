@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  ArrowLeft, 
+import {
+  ArrowLeft,
   FileText
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,9 +15,8 @@ import {
   CardContent,
 } from '@/components/ui/card'
 import { QuotationForm } from '@/components/forms/quotation-form'
-import { 
-  Currency, 
-  ProductType, 
+import {
+  Currency,
   CreateQuotationData
 } from '@/lib/types'
 
@@ -33,7 +33,6 @@ interface Product {
   name: string
   price: number
   currency: Currency
-  type: ProductType
   description?: string
 }
 
@@ -51,7 +50,7 @@ interface QuotationItem {
 export default function NewQuotationPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // Data states
   const [customers, setCustomers] = useState<Customer[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -63,7 +62,7 @@ export default function NewQuotationPage() {
     const fetchData = async () => {
       try {
         setLoadingData(true)
-        
+
         const [customersResponse, productsResponse] = await Promise.all([
           fetch('/api/customers'),
           fetch('/api/products?active=true')
@@ -72,7 +71,7 @@ export default function NewQuotationPage() {
         if (!customersResponse.ok) {
           throw new Error('Müşteriler alınamadı')
         }
-        
+
         if (!productsResponse.ok) {
           throw new Error('Ürünler alınamadı')
         }
@@ -82,7 +81,7 @@ export default function NewQuotationPage() {
 
         setCustomers(customersData.customers || [])
         setProducts(productsData.products || [])
-        
+
       } catch (error) {
         console.error('Veri yükleme hatası:', error)
         setError(error instanceof Error ? error.message : 'Veriler yüklenirken hata oluştu')
@@ -103,10 +102,10 @@ export default function NewQuotationPage() {
   }
 
   const handleSubmit = async (
-    formData: CreateQuotationData, 
-    items: QuotationItem[], 
-    kdvEnabled: boolean, 
-    kdvRate: number, 
+    formData: CreateQuotationData,
+    items: QuotationItem[],
+    kdvEnabled: boolean,
+    kdvRate: number,
     exchangeRate: number
   ) => {
     setIsLoading(true)
@@ -125,7 +124,6 @@ export default function NewQuotationPage() {
           currency: item.currency,
           discount: item.discount || 0,
           productName: item.product?.name || '',
-          productType: item.product?.type || ProductType.SOFTWARE
         }))
       }
 
@@ -143,12 +141,12 @@ export default function NewQuotationPage() {
       }
 
       const result = await response.json()
-      alert('Teklif başarıyla oluşturuldu!')
+      toast.success('Teklif başarıyla oluşturuldu!')
       router.push(`/teklifler/${result.quotation.id}`)
 
     } catch (error) {
       console.error('Teklif oluşturma hatası:', error)
-      alert(error instanceof Error ? error.message : 'Bir hata oluştu')
+      toast.error(error instanceof Error ? error.message : 'Bir hata oluştu')
     } finally {
       setIsLoading(false)
     }

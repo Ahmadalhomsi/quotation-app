@@ -4,11 +4,6 @@ export enum Currency {
   USD = 'USD'
 }
 
-export enum ProductType {
-  SOFTWARE = 'SOFTWARE', // Yazılım
-  HARDWARE = 'HARDWARE'  // Donanım
-}
-
 export enum QuotationStatus {
   DRAFT = 'DRAFT',       // Taslak
   SENT = 'SENT',         // Gönderildi  
@@ -49,7 +44,6 @@ export interface Product {
   price: number         // Satış Fiyatı
   purchasePrice?: number // Alış Fiyatı (maliyet)
   currency: Currency    // Para Birimi
-  type: ProductType     // Ürün Tipi
   sku?: string          // Stok Kodu
   photoUrl?: string     // Ürün Fotoğrafı URL'i
   isActive: boolean     // Aktif mi
@@ -63,7 +57,6 @@ export interface CreateProductData {
   price: number
   purchasePrice?: number
   currency: Currency
-  type: ProductType
   sku?: string
   photoUrl?: string
   isActive?: boolean
@@ -81,7 +74,6 @@ export interface QuotationItem {
   productId: string
   product: Product
   productName: string   // Ürün Adı (snapshot)
-  productType: ProductType // Ürün Tipi (snapshot)
   createdAt: Date
   updatedAt: Date
 }
@@ -144,7 +136,6 @@ export interface ProductFormData {
   price: string
   purchasePrice: string
   currency: Currency
-  type: ProductType
   sku: string
   photo?: File
   isActive: boolean
@@ -222,7 +213,6 @@ export interface PaginatedResponse<T> {
 // Arama ve filtreleme
 export interface ProductFilter {
   search?: string
-  type?: ProductType
   currency?: Currency
   isActive?: boolean
   page?: number
@@ -251,11 +241,6 @@ export const CurrencyLabels: Record<Currency, string> = {
   [Currency.USD]: 'Amerikan Doları'
 }
 
-export const ProductTypeLabels: Record<ProductType, string> = {
-  [ProductType.SOFTWARE]: 'Yazılım',
-  [ProductType.HARDWARE]: 'Donanım'
-}
-
 export const QuotationStatusLabels: Record<QuotationStatus, string> = {
   [QuotationStatus.DRAFT]: 'Taslak',
   [QuotationStatus.SENT]: 'Gönderildi',
@@ -269,8 +254,7 @@ export const ProductSchema = {
   name: { required: 'Ürün adı gereklidir', minLength: { value: 2, message: 'En az 2 karakter olmalı' } },
   price: { required: 'Satış fiyatı gereklidir', min: { value: 0.01, message: 'Fiyat 0\'dan büyük olmalı' } },
   purchasePrice: { min: { value: 0, message: 'Alış fiyatı 0\'dan küçük olamaz' } },
-  currency: { required: 'Para birimi seçiniz' },
-  type: { required: 'Ürün tipi seçiniz' }
+  currency: { required: 'Para birimi seçiniz' }
 }
 
 export const CustomerSchema = {

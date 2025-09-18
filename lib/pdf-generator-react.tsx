@@ -410,9 +410,6 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
               )}
               <View style={styles.productInfo}>
                 <Text style={styles.tableCellBold}>{item.product.name}</Text>
-                <Text style={styles.productType}>
-                  {item.product.type === 'SOFTWARE' ? 'Yazılım' : 'Donanım'}
-                </Text>
                 {item.product.description && (
                   <Text style={[styles.productType, { marginTop: 2 }]}>
                     {item.product.description}

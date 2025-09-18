@@ -1,7 +1,27 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Calculator } from 'lucide-react'
+import { Plus, Trash2, Calculator, GripVertical } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent
+} from '@dnd-kit/core'
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+    useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -33,7 +53,6 @@ import { CreateCustomerModal } from '@/components/modals/create-customer-modal'
 import { CreateProductModal } from '@/components/modals/create-product-modal'
 import {
     Currency,
-    ProductType,
     CreateQuotationData,
     CreateQuotationItemData
 } from '@/lib/types'
@@ -52,7 +71,6 @@ interface Product {
     name: string
     price: number
     currency: Currency
-    type: ProductType
     description?: string
 }
 
@@ -78,6 +96,127 @@ interface QuotationFormProps {
     isLoading?: boolean
 }
 
+// Sortable Table Row Component
+function SortableTableRow({ 
+    item, 
+    index, 
+    updateItemQuantity, 
+    updateItemUnitPrice, 
+    updateItemDiscount, 
+    removeItem 
+}: {
+    item: QuotationItem
+    index: number
+    updateItemQuantity: (index: number, quantity: number) => void
+    updateItemUnitPrice: (index: number, unitPrice: number) => void
+    updateItemDiscount: (index: number, discount: number) => void
+    removeItem: (index: number) => void
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: item.id })
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    }
+
+    return (
+        <TableRow ref={setNodeRef} style={style} className={isDragging ? 'bg-gray-50' : ''}>
+            <TableCell>
+                <div className="flex items-center space-x-2">
+                    <button
+                        type="button"
+                        className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded"
+                        {...attributes}
+                        {...listeners}
+                    >
+                        <GripVertical className="h-4 w-4 text-gray-400" />
+                    </button>
+                    <div>
+                        <div className="font-medium">{item.product?.name}</div>
+                    </div>
+                </div>
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 1)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault()
+                            }
+                        }}
+                        className="w-20 text-center"
+                    />
+                </div>
+            </TableCell>
+            <TableCell className="text-right">
+                <div className="flex justify-end">
+                    <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItemUnitPrice(index, parseFloat(e.target.value) || 0)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault()
+                            }
+                        }}
+                        className="w-24 text-right"
+                    />
+                    <span className="ml-1 flex items-center">
+                        {item.currency === Currency.TL ? '₺' : '$'}
+                    </span>
+                </div>
+            </TableCell>
+            <TableCell className="text-center">
+                <div className="flex justify-center">
+                    <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={item.discount || 0}
+                        onChange={(e) => updateItemDiscount(index, parseFloat(e.target.value) || 0)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault()
+                            }
+                        }}
+                        className="w-20 text-center"
+                        placeholder="0"
+                    />
+                </div>
+            </TableCell>
+            <TableCell className="text-right">
+                {item.currency === Currency.TL ? '₺' : '$'}{item.totalPrice.toFixed(2)}
+            </TableCell>
+            <TableCell className="text-center">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeItem(index)}
+                    className="text-red-600 hover:text-red-700"
+                >
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+            </TableCell>
+        </TableRow>
+    )
+}
+
 export function QuotationForm({
     mode,
     initialData = {},
@@ -97,7 +236,7 @@ export function QuotationForm({
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
 
     const [formData, setFormData] = useState<CreateQuotationData>({
-        title: initialData.title || '',
+        title: initialData.title || 'Teklif',
         description: initialData.description || '',
         validUntil: initialData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         customerId: initialData.customerId || '',
@@ -117,7 +256,27 @@ export function QuotationForm({
 
     const [errors, setErrors] = useState<Record<string, string>>({})
 
-    // Initialize exchange rate from API on mount
+    // Drag and drop sensors
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    )
+
+    // Handle drag end
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event
+
+        if (active.id !== over?.id) {
+            setItems((items) => {
+                const oldIndex = items.findIndex((item) => item.id === active.id)
+                const newIndex = items.findIndex((item) => item.id === over?.id)
+
+                return arrayMove(items, oldIndex, newIndex)
+            })
+        }
+    }
     useEffect(() => {
         if (mode === 'create') {
             const fetchExchangeRate = async () => {
@@ -132,6 +291,36 @@ export function QuotationForm({
             fetchExchangeRate()
         }
     }, [mode])
+
+    // Enhanced callback handlers that auto-select newly created items
+    const handleCustomerCreated = (customer: Customer) => {
+        onCustomerCreated(customer)
+        // Auto-select the newly created customer
+        setFormData(prev => ({ ...prev, customerId: customer.id }))
+        // Clear any customer-related errors
+        setErrors(prev => {
+            const newErrors = { ...prev }
+            delete newErrors.customerId
+            return newErrors
+        })
+    }
+
+    const handleProductCreated = (product: Product) => {
+        onProductCreated(product)
+        // Auto-select the newly created product
+        setNewItem(prev => ({
+            ...prev,
+            productId: product.id,
+            unitPrice: Number(product.price),
+            currency: product.currency
+        }))
+        // Clear any product-related errors
+        setErrors(prev => {
+            const newErrors = { ...prev }
+            delete newErrors.items
+            return newErrors
+        })
+    }
 
     const handleProductSelect = (productId: string) => {
         const product = products.find(p => p.id === productId)
@@ -205,6 +394,17 @@ export function QuotationForm({
         }))
     }
 
+    const updateItemUnitPrice = (index: number, newUnitPrice: number) => {
+        setItems(prev => prev.map((item, i) => {
+            if (i === index) {
+                const discountMultiplier = 1 - ((item.discount || 0) / 100)
+                const totalPrice = item.quantity * newUnitPrice * discountMultiplier
+                return { ...item, unitPrice: newUnitPrice, totalPrice }
+            }
+            return item
+        }))
+    }
+
     const calculateTotals = () => {
         const kdvMultiplier = kdvEnabled ? (1 + kdvRate / 100) : 1
 
@@ -273,7 +473,17 @@ export function QuotationForm({
                             <Input
                                 id="title"
                                 value={formData.title}
-                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                onChange={(e) => {
+                                    setFormData(prev => ({ ...prev, title: e.target.value }))
+                                    // Clear title error when user starts typing
+                                    if (e.target.value.trim()) {
+                                        setErrors(prev => {
+                                            const newErrors = { ...prev }
+                                            delete newErrors.title
+                                            return newErrors
+                                        })
+                                    }
+                                }}
                                 placeholder="Örn: POS Sistemi Teklifi"
                                 className={errors.title ? 'border-red-500' : ''}
                             />
@@ -285,12 +495,21 @@ export function QuotationForm({
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                                 {mode === 'create' && (
-                                    <CreateCustomerModal onCustomerCreated={onCustomerCreated} />
+                                    <CreateCustomerModal onCustomerCreated={handleCustomerCreated} />
                                 )}
                             </div>
                             <Select
+                                key={`customer-select-${customers.length}`}
                                 value={formData.customerId}
-                                onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
+                                onValueChange={(value) => {
+                                    setFormData(prev => ({ ...prev, customerId: value }))
+                                    // Clear customer error when a customer is selected
+                                    setErrors(prev => {
+                                        const newErrors = { ...prev }
+                                        delete newErrors.customerId
+                                        return newErrors
+                                    })
+                                }}
                             >
                                 <SelectTrigger className={errors.customerId ? 'border-red-500' : ''}>
                                     <SelectValue placeholder={customers.length === 0 ? "Müşteri bulunamadı" : "Müşteri seçin"} />
@@ -403,7 +622,7 @@ export function QuotationForm({
                         <div className="space-y-2">
                             <div className="flex items-center space-x-2">
                                 {mode === 'create' && (
-                                    <CreateProductModal onProductCreated={onProductCreated} />
+                                    <CreateProductModal onProductCreated={handleProductCreated} />
                                 )}
                             </div>
                             <Select
@@ -438,6 +657,11 @@ export function QuotationForm({
                                     ...prev,
                                     quantity: parseInt(e.target.value) || 1
                                 }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                    }
+                                }}
                             />
                         </div>
 
@@ -452,6 +676,11 @@ export function QuotationForm({
                                     ...prev,
                                     unitPrice: parseFloat(e.target.value) || 0
                                 }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                    }
+                                }}
                             />
                         </div>
 
@@ -486,6 +715,11 @@ export function QuotationForm({
                                     ...prev,
                                     discount: parseFloat(e.target.value) || 0
                                 }))}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                    }
+                                }}
                             />
                         </div>
 
@@ -511,74 +745,39 @@ export function QuotationForm({
                         <CardTitle>Eklenen Ürünler</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Ürün</TableHead>
-                                    <TableHead className="text-center">Miktar</TableHead>
-                                    <TableHead className="text-right">Birim Fiyat</TableHead>
-                                    <TableHead className="text-center">İskonto (%)</TableHead>
-                                    <TableHead className="text-right">Toplam</TableHead>
-                                    <TableHead className="text-center">İşlem</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {items.map((item, index) => (
-                                    <TableRow key={item.id}>
-                                        <TableCell>
-                                            <div>
-                                                <div className="font-medium">{item.product?.name}</div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    {item.product?.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex justify-center">
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    value={item.quantity}
-                                                    onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 1)}
-                                                    className="w-20 text-center"
-                                                />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {item.currency === Currency.TL ? '₺' : '$'}{item.unitPrice.toFixed(2)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <div className="flex justify-center">
-                                                <Input
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.01"
-                                                    value={item.discount || 0}
-                                                    onChange={(e) => updateItemDiscount(index, parseFloat(e.target.value) || 0)}
-                                                    className="w-20 text-center"
-                                                    placeholder="0"
-                                                />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {item.currency === Currency.TL ? '₺' : '$'}{item.totalPrice.toFixed(2)}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeItem(index)}
-                                                className="text-red-600 hover:text-red-800"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Ürün</TableHead>
+                                        <TableHead className="text-center">Miktar</TableHead>
+                                        <TableHead className="text-right">Birim Fiyat</TableHead>
+                                        <TableHead className="text-center">İskonto (%)</TableHead>
+                                        <TableHead className="text-right">Toplam</TableHead>
+                                        <TableHead className="text-center">İşlem</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    <SortableContext items={items.map(item => item.id)} strategy={verticalListSortingStrategy}>
+                                        {items.map((item, index) => (
+                                            <SortableTableRow
+                                                key={item.id}
+                                                item={item}
+                                                index={index}
+                                                updateItemQuantity={updateItemQuantity}
+                                                updateItemUnitPrice={updateItemUnitPrice}
+                                                updateItemDiscount={updateItemDiscount}
+                                                removeItem={removeItem}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </TableBody>
+                            </Table>
+                        </DndContext>
                     </CardContent>
                 </Card>
             )}

@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { QuotationStatus, QuotationStatusLabels, ProductType, Currency } from '@/lib/types'
+import { QuotationStatus, QuotationStatusLabels, Currency } from '@/lib/types'
 import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
 // Types matching the API response
@@ -74,7 +74,6 @@ interface QuotationDetail {
     product: {
       id: string
       name: string
-      type: ProductType
       price: number
       currency: string
       description: string | null
@@ -173,7 +172,6 @@ export default function QuotationDetailPage() {
           quotationId: item.quotationId,
           productId: item.productId,
           productName: item.product.name,
-          productType: item.product.type,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
@@ -474,9 +472,6 @@ export default function QuotationDetailPage() {
                           )}
                           <div>
                             <div className="font-medium">{item.product.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {item.product.type === ProductType.SOFTWARE ? 'Yazılım' : 'Donanım'}
-                            </div>
                             {item.product.description && (
                               <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                 {item.product.description}

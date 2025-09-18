@@ -20,14 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Currency, ProductType } from '@/lib/types'
+import { Currency } from '@/lib/types'
 
 interface Product {
   id: string
   name: string
   description?: string
   price: number
-  type: ProductType
   currency: Currency
   sku?: string
   isActive?: boolean
@@ -44,7 +43,6 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
     name: '',
     description: '',
     price: '',
-    type: ProductType.SOFTWARE,
     currency: Currency.TL,
     sku: ''
   })
@@ -73,21 +71,21 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
     
     setIsLoading(true)
     try {
-      const requestData = {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        price: Number(formData.price),
-        currency: formData.currency,
-        type: formData.type,
-        sku: formData.sku.trim() || undefined
+      const formDataToSend = new FormData()
+      formDataToSend.append('name', formData.name.trim())
+      if (formData.description.trim()) {
+        formDataToSend.append('description', formData.description.trim())
       }
+      formDataToSend.append('price', formData.price)
+      formDataToSend.append('currency', formData.currency)
+      if (formData.sku.trim()) {
+        formDataToSend.append('sku', formData.sku.trim())
+      }
+      formDataToSend.append('isActive', 'true')
       
       const response = await fetch('/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
+        body: formDataToSend
       })
       
       if (!response.ok) {
@@ -103,7 +101,6 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
         name: '',
         description: '',
         price: '',
-        type: ProductType.SOFTWARE,
         currency: Currency.TL,
         sku: ''
       })
@@ -130,13 +127,6 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
         [field]: ''
       }))
     }
-  }
-
-  const handleTypeChange = (value: ProductType) => {
-    setFormData(prev => ({
-      ...prev,
-      type: value
-    }))
   }
 
   return (
@@ -185,22 +175,6 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
               placeholder="Ürün/hizmet açıklaması..."
               rows={2}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="type">Tür *</Label>
-            <Select
-              value={formData.type}
-              onValueChange={handleTypeChange}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ProductType.SOFTWARE}>Yazılım</SelectItem>
-                <SelectItem value={ProductType.HARDWARE}>Donanım</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
           
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

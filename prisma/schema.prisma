@@ -20,11 +20,7 @@ enum Currency {
   USD
 }
 
-// Ürün tipi enum'ı
-enum ProductType {
-  SOFTWARE // Yazılım
-  HARDWARE // Donanım
-}
+
 
 // Teklif durumu enum'ı
 enum QuotationStatus {
@@ -62,7 +58,6 @@ model Product {
   price       Decimal     @db.Decimal(10, 2) // Satış fiyatı
   purchasePrice Decimal?  @db.Decimal(10, 2) @map("purchase_price") // Alış fiyatı (maliyet)
   currency    Currency    // Para birimi (TL/USD)
-  type        ProductType // Ürün tipi (Yazılım/Donanım)
   sku         String?     @unique // Stok kodu
   photoUrl    String?     @map("photo_url") // Ürün fotoğrafı URL'i (MinIO)
   isActive    Boolean     @default(true) @map("is_active") // Aktif mi
@@ -125,7 +120,6 @@ model QuotationItem {
   
   // Snapshot of product details at the time of quotation
   productName String    @map("product_name") // Ürün adı (o anki)
-  productType ProductType @map("product_type") // Ürün tipi (o anki)
   
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")

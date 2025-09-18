@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import { ProductType as PrismaProductType } from '../../generated/prisma'
 import { uploadFile, generateUniqueFilename, isValidImageType, isValidFileSize } from '@/lib/minio'
 
 import prisma from '@/lib/prisma'
@@ -11,16 +10,11 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const isActive = searchParams.get('active')
-    const type = searchParams.get('type')
     
-    const where: { isActive?: boolean; type?: PrismaProductType } = {}
+    const where: { isActive?: boolean } = {}
     
     if (isActive !== null) {
       where.isActive = isActive === 'true'
-    }
-    
-    if (type && (type === 'SOFTWARE' || type === 'HARDWARE')) {
-      where.type = type as PrismaProductType
     }
 
     const products = await prisma.product.findMany({
@@ -56,15 +50,14 @@ export async function POST(request: NextRequest) {
     const price = parseFloat(formData.get('price') as string)
     const purchasePrice = formData.get('purchasePrice') ? parseFloat(formData.get('purchasePrice') as string) : null
     const currency = formData.get('currency') as string
-    const type = formData.get('type') as string
     const sku = formData.get('sku') as string
     const isActive = (formData.get('isActive') as string) === 'true'
     const photo = formData.get('photo') as File | null
     
     // Validation
-    if (!name || !price || !currency || !type) {
+    if (!name || !price || !currency) {
       return NextResponse.json(
-        { error: 'Ürün adı, fiyat, para birimi ve ürün tipi gereklidir' },
+        { error: 'Ürün adı, fiyat ve para birimi gereklidir' },
         { status: 400 }
       )
     }
@@ -144,7 +137,6 @@ export async function POST(request: NextRequest) {
       price,
       purchasePrice: purchasePrice || undefined,
       currency: currency as any,
-      type: type as PrismaProductType,
       sku: sku && sku.trim() ? sku.trim() : undefined,
       photoUrl: photoUrl || undefined,
       isActive
