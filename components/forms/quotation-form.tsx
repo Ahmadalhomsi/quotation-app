@@ -483,6 +483,7 @@ export function QuotationForm({
                                         })
                                     }
                                 }}
+                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                                 placeholder="Örn: POS Sistemi Teklifi"
                                 className={errors.title ? 'border-red-500' : ''}
                             />
@@ -538,6 +539,11 @@ export function QuotationForm({
                             id="description"
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                }
+                            }}
                             placeholder="Teklif hakkında detaylı açıklama..."
                             rows={3}
                         />
@@ -556,6 +562,7 @@ export function QuotationForm({
                                 ...prev,
                                 validUntil: new Date(e.target.value)
                             }))}
+                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                         />
                     </div>
                 </CardContent>
@@ -589,6 +596,7 @@ export function QuotationForm({
                                 step="0.01"
                                 value={kdvRate}
                                 onChange={(e) => setKdvRate(Number(e.target.value))}
+                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                                 disabled={!kdvEnabled}
                             />
                         </div>
@@ -602,6 +610,7 @@ export function QuotationForm({
                                 step="0.0001"
                                 value={exchangeRate}
                                 onChange={(e) => setExchangeRate(Number(e.target.value))}
+                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                             />
                         </div>
                     </div>
@@ -864,6 +873,11 @@ export function QuotationForm({
                             id="terms"
                             value={formData.terms}
                             onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                }
+                            }}
                             placeholder="Teklif ile ilgili şartlar ve koşullar..."
                             rows={4}
                         />
@@ -875,6 +889,11 @@ export function QuotationForm({
                             id="notes"
                             value={formData.notes}
                             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault()
+                                }
+                            }}
                             placeholder="Dahili notlar ve açıklamalar..."
                             rows={3}
                         />

@@ -66,6 +66,7 @@ export function CreateCustomerModal({ onCustomerCreated }: CreateCustomerModalPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation() // Prevent event bubbling to parent form
     
     if (!validateForm()) {
       return
@@ -128,6 +129,12 @@ export function CreateCustomerModal({ onCustomerCreated }: CreateCustomerModalPr
     }
   }
 
+  const preventEnterSubmit = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -158,6 +165,7 @@ export function CreateCustomerModal({ onCustomerCreated }: CreateCustomerModalPr
                 id="companyName"
                 value={formData.companyName}
                 onChange={(e) => handleInputChange('companyName', e.target.value)}
+                onKeyDown={preventEnterSubmit}
                 placeholder="Örn: ABC Teknoloji Ltd."
                 className={errors.companyName ? 'border-red-500' : ''}
               />

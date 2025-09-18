@@ -64,12 +64,11 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    e.stopPropagation() // Prevent event bubbling to parent form
+
     if (!validateForm()) {
       return
-    }
-    
-    setIsLoading(true)
+    }    setIsLoading(true)
     try {
       const formDataToSend = new FormData()
       formDataToSend.append('name', formData.name.trim())
@@ -158,6 +157,11 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
               id="name"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
               placeholder="Örn: Web Sitesi Tasarımı"
               className={errors.name ? 'border-red-500' : ''}
             />
@@ -187,6 +191,11 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
                 min="0"
                 value={formData.price}
                 onChange={(e) => handleInputChange('price', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                  }
+                }}
                 placeholder="0.00"
                 className={errors.price ? 'border-red-500' : ''}
               />
@@ -217,6 +226,11 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
                 id="sku"
                 value={formData.sku}
                 onChange={(e) => handleInputChange('sku', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                  }
+                }}
                 placeholder="Örn: PRD-001"
               />
             </div>
