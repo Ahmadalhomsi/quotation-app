@@ -11,7 +11,8 @@ import {
   Eye,
   Download,
   Calendar,
-  DollarSign
+  DollarSign,
+  Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -120,6 +121,33 @@ export default function QuotationsPage() {
     } catch (error) {
       console.error('PDF indirme hatası:', error)
       toast.error('PDF indirilemedi. Lütfen tekrar deneyin.')
+    }
+  }
+
+  const handleDeleteQuotation = async (quotationId: string, quotationNumber: string) => {
+    if (!confirm(`"${quotationNumber}" numaralı teklifi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/quotations/${quotationId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Remove from local state
+        setQuotations(prevQuotations =>
+          prevQuotations.filter(quotation => quotation.id !== quotationId)
+        )
+        toast.success('Teklif başarıyla silindi')
+      } else {
+        const errorData = await response.json()
+        console.error('Teklif silinemedi:', errorData.error)
+        toast.error('Teklif silinemedi: ' + errorData.error)
+      }
+    } catch (error) {
+      console.error('Teklif silme hatası:', error)
+      toast.error('Teklif silinirken bir hata oluştu')
     }
   }
 
@@ -355,6 +383,15 @@ export default function QuotationsPage() {
                           <Link href={`/teklifler/${quotation.id}/duzenle`}>
                             <Edit className="h-4 w-4" />
                           </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
+                          title="Sil"
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
