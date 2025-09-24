@@ -44,12 +44,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        console.log('Giriş denemesi:', username);
-        console.log('Beklenen kullanıcı adı:', authUsername);
         console.log('Client IP:', clientIP);
-        console.log('Şifre:', password);
-        console.log('Beklenen şifre hash\'i:', authPasswordHash);
-
 
         // Validate credentials
         if (username !== authUsername) {
