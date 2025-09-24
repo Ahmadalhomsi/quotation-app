@@ -230,6 +230,18 @@ export function QuotationForm({
     onProductCreated,
     isLoading = false
 }: QuotationFormProps) {
+    // Default terms and conditions
+    const defaultTerms = `-Geçerlilik Süresi
+Teklif kabul edildikten sonra geçerlilik süresi 15 gündür.
+
+-Ödeme Koşulları
+İşe başlanması için toplam bedelin %50'si peşinat olarak alınır.
+Kalan %50'lik bakiye, iş tesliminde nakit veya kredi/banka kartı ile ödenir.
+
+-Garanti Şartları
+Teslim edilen ürünlerin garantisi, teslim tarihinden itibaren 2 yıl geçerlidir.
+Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışındadır.`
+
     const [exchangeRate, setExchangeRate] = useState<number>(initialExchangeRate)
     const [kdvEnabled, setKdvEnabled] = useState<boolean>(initialKdvEnabled)
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
@@ -240,7 +252,7 @@ export function QuotationForm({
         validUntil: initialData.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         customerId: initialData.customerId || '',
         items: [],
-        terms: initialData.terms || '',
+        terms: initialData.terms || defaultTerms,
         notes: initialData.notes || ''
     })
 
