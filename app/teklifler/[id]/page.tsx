@@ -71,6 +71,7 @@ interface QuotationDetail {
     unitPrice: number
     totalPrice: number
     currency: string
+    discount?: number
     product: {
       id: string
       name: string
@@ -176,6 +177,7 @@ export default function QuotationDetailPage() {
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
           currency: item.currency as Currency,
+          discount: item.discount || 0,
           product: {
             ...item.product,
             description: item.product.description || undefined,
@@ -450,6 +452,7 @@ export default function QuotationDetailPage() {
                     <TableHead>Ürün</TableHead>
                     <TableHead>Miktar</TableHead>
                     <TableHead>Birim Fiyat</TableHead>
+                    <TableHead>İskonto</TableHead>
                     <TableHead>P.B.</TableHead>
                     <TableHead className="text-right">Toplam</TableHead>
                   </TableRow>
@@ -483,6 +486,9 @@ export default function QuotationDetailPage() {
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell className="font-mono">
                         {formatPrice(item.unitPrice, item.currency as 'TL' | 'USD')}
+                      </TableCell>
+                      <TableCell>
+                        {item.discount && item.discount > 0 ? `%${item.discount}` : '-'}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">
@@ -583,10 +589,6 @@ export default function QuotationDetailPage() {
                   <Edit className="mr-2 h-4 w-4" />
                   Düzenle
                 </Link>
-              </Button>
-              <Button variant="outline" className="w-full">
-                <Eye className="mr-2 h-4 w-4" />
-                Önizleme
               </Button>
             </CardContent>
           </Card>
