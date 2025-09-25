@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreateCustomerData } from '@/lib/types'
-
 import prisma from '@/lib/prisma'
-
 
 // GET /api/customers - Tüm müşterileri listele
 export async function GET() {
@@ -12,6 +10,11 @@ export async function GET() {
         createdAt: 'desc'
       },
       include: {
+        customerTypes: {
+          include: {
+            type: true
+          }
+        },
         _count: {
           select: { quotations: true }
         }
@@ -41,8 +44,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Email validation (only if provided)
-    if (body.email) {
+    // Set default values for new fields if not provided
+    const customerData = {
+      ...body,
+      priority: body.priority || 1,
+      lastContact: new Date() // Set current time as first contact
+    }
+
+    // Email validation (only if provided and not empty)
+    if (body.email && body.email.trim() !== '') {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(body.email)) {
         return NextResponse.json(
@@ -64,11 +74,44 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Separate typeIds from customer data
+    const { typeIds = [], ...customerCreateData } = customerData
+
+    // Clean up empty strings for nullable fields
+    if (customerCreateData.email === '') {
+      customerCreateData.email = undefined
+    }
+    if (customerCreateData.phone === '') {
+      customerCreateData.phone = undefined
+    }
+
     const customer = await prisma.customer.create({
-      data: body
+      data: customerCreateData
     })
 
-    return NextResponse.json({ customer }, { status: 201 })
+    // Create customer type assignments if any are provided
+    if (typeIds.length > 0) {
+      await prisma.customerCustomerType.createMany({
+        data: typeIds.map((typeId: string) => ({
+          customerId: customer.id,
+          typeId: typeId
+        }))
+      })
+    }
+
+    // Fetch the created customer with its types
+    const customerWithTypes = await prisma.customer.findUnique({
+      where: { id: customer.id },
+      include: {
+        customerTypes: {
+          include: {
+            type: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({ customer: customerWithTypes }, { status: 201 })
   } catch (error) {
     console.error('Müşteri oluşturulurken hata:', error)
     return NextResponse.json(

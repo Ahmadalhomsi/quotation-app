@@ -68,7 +68,7 @@ export interface CustomerActivity {
 export interface CreateCustomerData {
   companyName: string
   contactName: string
-  email: string
+  email?: string  // Make email optional
   phone?: string
   address?: string
   taxNumber?: string

@@ -34,6 +34,22 @@ interface Customer {
   address: string | null
   taxNumber: string | null
   taxOffice: string | null
+  priority: number
+  source: string | null
+  notes: string | null
+  lastContact: string | null
+  nextContact: string | null
+  customerTypes?: Array<{
+    id: string
+    typeId: string
+    type: {
+      id: string
+      name: string
+      color: string
+      category?: string
+      description?: string
+    }
+  }>
   createdAt: string
   updatedAt: string
 }
@@ -281,26 +297,155 @@ export default function CustomerDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Marketing Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Building className="h-5 w-5" />
+                <span>Pazarlama Bilgileri</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Öncelik</div>
+                  <div className="mt-1">
+                    <Badge variant={customer.priority === 3 ? 'destructive' : customer.priority === 2 ? 'default' : 'secondary'}>
+                      {customer.priority === 3 ? 'Yüksek' : customer.priority === 2 ? 'Orta' : 'Düşük'}
+                    </Badge>
+                  </div>
+                </div>
+                {customer.source && (
+                  <div>
+                    <div className="text-sm font-medium text-muted-foreground">Kaynak</div>
+                    <div className="mt-1 text-sm">{customer.source}</div>
+                  </div>
+                )}
+              </div>
+
+              {customer.customerTypes && customer.customerTypes.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">Müşteri Tipleri</div>
+                  <div className="flex flex-wrap gap-2">
+                    {customer.customerTypes.map((customerType) => (
+                      <Badge 
+                        key={customerType.id}
+                        variant="outline"
+                        style={{ 
+                          backgroundColor: customerType.type.color + '15',
+                          borderColor: customerType.type.color + '50',
+                          color: customerType.type.color
+                        }}
+                      >
+                        {customerType.type.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {customer.source && (
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Müşteri Kaynağı</div>
+                  <div className="mt-1">{customer.source}</div>
+                </div>
+              )}
+
+              {customer.notes && (
+                <div>
+                  <div className="text-sm font-medium text-muted-foreground">Pazarlama Notları</div>
+                  <div className="mt-1 text-sm bg-muted p-3 rounded-md">{customer.notes}</div>
+                </div>
+              )}
+
+              {(customer.lastContact || customer.nextContact) && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {customer.lastContact && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Son İletişim</div>
+                      <div className="text-sm">{new Date(customer.lastContact).toLocaleDateString('tr-TR')}</div>
+                    </div>
+                  )}
+                  {customer.nextContact && (
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground">Sonraki İletişim</div>
+                      <div className="text-sm font-medium text-orange-600">
+                        {new Date(customer.nextContact).toLocaleDateString('tr-TR')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Durum</CardTitle>
+              <CardTitle className="text-lg">Özet</CardTitle>
             </CardHeader>
             <CardContent>
-              <Badge variant="default" className="mb-4">
-                Aktif Müşteri
-              </Badge>
-              <div className="space-y-3 text-sm">
+              <div className="space-y-4">
                 <div>
-                  <div className="font-medium text-muted-foreground">Kayıt Tarihi</div>
-                  <div>{new Date(customer.createdAt).toLocaleDateString('tr-TR')}</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-2">Müşteri Tipleri</div>
+                  {customer.customerTypes && customer.customerTypes.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {customer.customerTypes.slice(0, 2).map((customerType) => (
+                        <Badge 
+                          key={customerType.id}
+                          variant="outline"
+                          className="text-xs"
+                          style={{ 
+                            backgroundColor: customerType.type.color + '20',
+                            borderColor: customerType.type.color,
+                            color: customerType.type.color
+                          }}
+                        >
+                          {customerType.type.name}
+                        </Badge>
+                      ))}
+                      {customer.customerTypes.length > 2 && (
+                        <span className="text-xs text-muted-foreground self-center">
+                          +{customer.customerTypes.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="text-xs">Tip Belirtilmemiş</Badge>
+                  )}
                 </div>
-                <div>
-                  <div className="font-medium text-muted-foreground">Son Güncelleme</div>
-                  <div>{new Date(customer.updatedAt).toLocaleDateString('tr-TR')}</div>
+
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <div className="font-medium text-muted-foreground">Öncelik Seviyesi</div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant={customer.priority === 3 ? 'destructive' : customer.priority === 2 ? 'default' : 'secondary'}>
+                        {customer.priority === 3 ? 'Yüksek' : customer.priority === 2 ? 'Orta' : 'Düşük'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="font-medium text-muted-foreground">Kayıt Tarihi</div>
+                    <div>{new Date(customer.createdAt).toLocaleDateString('tr-TR')}</div>
+                  </div>
+                  
+                  <div>
+                    <div className="font-medium text-muted-foreground">Son Güncelleme</div>
+                    <div>{new Date(customer.updatedAt).toLocaleDateString('tr-TR')}</div>
+                  </div>
+
+                  {customer.nextContact && (
+                    <div>
+                      <div className="font-medium text-muted-foreground">Sonraki İletişim</div>
+                      <div className="font-medium text-orange-600">
+                        {new Date(customer.nextContact).toLocaleDateString('tr-TR')}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

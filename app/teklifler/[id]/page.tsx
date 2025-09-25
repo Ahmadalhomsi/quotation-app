@@ -37,6 +37,26 @@ import { Separator } from '@/components/ui/separator'
 import { QuotationStatus, QuotationStatusLabels, Currency } from '@/lib/types'
 import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
+// PDF-compatible customer type with string status
+interface PdfCustomer {
+  id: string
+  companyName: string
+  contactName: string
+  email: string
+  phone?: string
+  address?: string
+  taxNumber?: string
+  taxOffice?: string
+  status?: string  // String status for PDF compatibility
+  priority: number
+  source?: string
+  notes?: string
+  lastContact?: Date
+  nextContact?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Types matching the API response
 interface QuotationDetail {
   id: string
@@ -53,6 +73,13 @@ interface QuotationDetail {
     address: string | null
     taxNumber: string | null
     taxOffice: string | null
+    status: string
+    priority: number
+    source: string | null
+    assignedTo: string | null
+    notes: string | null
+    lastContact: string | null
+    nextContact: string | null
     createdAt: string
     updatedAt: string
   }
@@ -165,9 +192,15 @@ export default function QuotationDetailPage() {
           address: quotation.customer.address || undefined,
           taxNumber: quotation.customer.taxNumber || undefined,
           taxOffice: quotation.customer.taxOffice || undefined,
+          status: quotation.customer.status || undefined,
+          priority: quotation.customer.priority || 1,
+          source: quotation.customer.source || undefined,
+          notes: quotation.customer.notes || undefined,
+          lastContact: quotation.customer.lastContact ? new Date(quotation.customer.lastContact) : undefined,
+          nextContact: quotation.customer.nextContact ? new Date(quotation.customer.nextContact) : undefined,
           createdAt: new Date(quotation.customer.createdAt),
           updatedAt: new Date(quotation.customer.updatedAt)
-        },
+        } as PdfCustomer,
         items: quotation.items.map(item => ({
           id: item.id,
           quotationId: item.quotationId,
@@ -193,7 +226,7 @@ export default function QuotationDetailPage() {
       }
 
       await ReactPdfGenerator.downloadQuotationPdf({
-        quotation: pdfQuotation,
+        quotation: pdfQuotation as unknown as import('@/lib/types').Quotation, // Type cast for PDF generation
         companyInfo: {
           name: 'MAPOS',
           address: 'Yeşilove Mah. 2602. Sk. No:3/A Küçükçekmece / İSTANBUL',

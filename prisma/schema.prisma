@@ -22,6 +22,44 @@ enum Currency {
 
 
 
+// Müşteri durumu tipi (artık enum değil, database'de saklanacak)
+
+// Unified customer type system (replaces both status and labels)
+model CustomerType {
+  id          String   @id @default(cuid())
+  name        String   @unique // Örn: "VIP Müşteri", "Yeni Potansiyel", "Sorunlu"
+  color       String   @default("#6B7280") // Hex renk kodu
+  description String?  // Açıklama
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0) // Sıralama
+  
+  // Type category to help organize (optional)
+  category    String?  // Örn: "status", "priority", "source", "custom"
+  
+  customerTypes CustomerCustomerType[]
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@map("customer_types")
+}
+
+// Many-to-many relationship between customers and types
+model CustomerCustomerType {
+  id        String   @id @default(cuid())
+  
+  customerId String      @map("customer_id")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  typeId     String      @map("type_id")
+  type       CustomerType @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  @@unique([customerId, typeId]) // Same customer can't have same type multiple times
+  @@map("customer_customer_types")
+}
+
 // Teklif durumu enum'ı
 enum QuotationStatus {
   DRAFT     // Taslak
@@ -33,21 +71,47 @@ enum QuotationStatus {
 
 // Müşteri modeli
 model Customer {
-  id          String   @id @default(cuid())
-  companyName String   @map("company_name") // Şirket adı
-  contactName String   @map("contact_name") // İletişim kişisi
-  email       String?  @unique
+  id          String         @id @default(cuid())
+  companyName String         @map("company_name") // Şirket adı
+  contactName String         @map("contact_name") // İletişim kişisi
+  email       String?        @unique
   phone       String?
   address     String?
-  taxNumber   String?  @map("tax_number") // Vergi numarası
-  taxOffice   String?  @map("tax_office") // Vergi dairesi
+  taxNumber   String?        @map("tax_number") // Vergi numarası
+  taxOffice   String?        @map("tax_office") // Vergi dairesi
+  
+  // Marketing ve CRM alanları
+  priority    Int                   @default(1) // Öncelik (1=Düşük, 2=Orta, 3=Yüksek)
+  source      String?               // Kaynak (website, referans, reklam, vb.)
+  notes       String?               // Marketing notları
+  lastContact DateTime?             @map("last_contact") // Son iletişim tarihi
+  nextContact DateTime?             @map("next_contact") // Sonraki iletişim tarihi
   
   quotations  Quotation[]
+  activities  CustomerActivity[]    // Müşteri aktiviteleri
+  customerTypes CustomerCustomerType[] // Müşteri tipleri (unified status and labels)
   
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   
   @@map("customers")
+}
+
+// Müşteri aktiviteleri modeli (pazarlama takibi için)
+model CustomerActivity {
+  id          String   @id @default(cuid())
+  type        String   // Aktivite türü (arama, email, demo, ziyaret, vb.)
+  description String?  // Aktivite açıklaması
+  result      String?  // Aktivite sonucu
+  nextAction  String?  @map("next_action") // Sonraki eylem
+  
+  customerId  String   @map("customer_id")
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  createdBy   String?  @map("created_by") // Aktiviteyi oluşturan kişi
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@map("customer_activities")
 }
 
 // Ürün modeli
