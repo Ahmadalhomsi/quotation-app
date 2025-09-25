@@ -4,6 +4,28 @@ export enum Currency {
   USD = 'USD'
 }
 
+// Unified customer type system (replaces both status and labels)
+export interface CustomerType {
+  id: string
+  name: string
+  color: string
+  description?: string
+  category?: string // 'status', 'priority', 'source', 'behavior', 'custom'
+  isActive: boolean
+  sortOrder: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Customer type assignment (many-to-many)
+export interface CustomerCustomerType {
+  id: string
+  customerId: string
+  typeId: string
+  type: CustomerType
+  createdAt: Date
+}
+
 export enum QuotationStatus {
   DRAFT = 'DRAFT',       // Taslak
   SENT = 'SENT',         // Gönderildi  
@@ -15,15 +37,32 @@ export enum QuotationStatus {
 // Müşteri tipleri
 export interface Customer {
   id: string
-  companyName: string    // Şirket Adı
-  contactName: string    // İletişim Kişisi
+  companyName: string         // Şirket Adı
+  contactName: string         // İletişim Kişisi
   email: string
   phone?: string
   address?: string
-  taxNumber?: string     // Vergi Numarası
-  taxOffice?: string     // Vergi Dairesi
+  taxNumber?: string          // Vergi Numarası
+  taxOffice?: string          // Vergi Dairesi
+  priority: number                    // Öncelik (1=Düşük, 2=Orta, 3=Yüksek)
+  source?: string                     // Müşteri kaynağı
+  notes?: string                      // Marketing notları
+  lastContact?: Date                  // Son iletişim tarihi
+  nextContact?: Date                  // Sonraki iletişim tarihi
+  customerTypes?: CustomerCustomerType[] // Müşteri tipleri (unified status and labels)
   createdAt: Date
   updatedAt: Date
+}
+
+export interface CustomerActivity {
+  id: string
+  type: string           // Aktivite türü
+  description?: string   // Aktivite açıklaması
+  result?: string        // Aktivite sonucu
+  nextAction?: string    // Sonraki eylem
+  customerId: string
+  createdBy?: string     // Aktiviteyi oluşturan kişi
+  createdAt: Date
 }
 
 export interface CreateCustomerData {
@@ -34,6 +73,11 @@ export interface CreateCustomerData {
   address?: string
   taxNumber?: string
   taxOffice?: string
+  priority?: number
+  source?: string
+  notes?: string
+  nextContact?: Date
+  typeIds?: string[]  // For multiple customer types
 }
 
 // Ürün tipleri
@@ -149,6 +193,12 @@ export interface CustomerFormData {
   address: string
   taxNumber: string
   taxOffice: string
+  statusId: string
+  priority: number
+  source: string
+  notes: string
+  nextContact: string
+  labelIds: string[]
 }
 
 export interface QuotationFormData {
@@ -240,6 +290,8 @@ export const CurrencyLabels: Record<Currency, string> = {
   [Currency.TL]: 'Türk Lirası',
   [Currency.USD]: 'Amerikan Doları'
 }
+
+// These labels are now dynamic and come from the database
 
 export const QuotationStatusLabels: Record<QuotationStatus, string> = {
   [QuotationStatus.DRAFT]: 'Taslak',
