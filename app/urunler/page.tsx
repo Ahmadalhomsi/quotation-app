@@ -276,23 +276,23 @@ export default function ProductsPage() {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ürün Bilgileri</TableHead>
-                  <TableHead>Tür</TableHead>
-                  <TableHead>Satış Fiyatı</TableHead>
-                  <TableHead>Alış Fiyatı</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead>Kayıt Tarihi</TableHead>
-                  <TableHead className="text-right">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="overflow-x-auto">
+              <Table className="relative">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">Ürün Bilgileri</TableHead>
+                    <TableHead className="w-[120px]">Satış Fiyatı</TableHead>
+                    <TableHead className="w-[120px]">Alış Fiyatı</TableHead>
+                    <TableHead className="w-[100px]">SKU</TableHead>
+                    <TableHead className="w-[80px]">Durum</TableHead>
+                    <TableHead className="w-[100px]">Kayıt Tarihi</TableHead>
+                    <TableHead className="w-[120px] text-right sticky right-0 bg-background/95 backdrop-blur shadow-lg border-l">İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                 {filteredProducts.map((product) => (
                   <TableRow key={product.id}>
-                    <TableCell>
+                    <TableCell className="max-w-[300px]">
                       <div className="flex items-center space-x-3">
                         {product.photoUrl && (
                           <div className="w-10 h-10 border rounded overflow-hidden bg-muted flex-shrink-0">
@@ -301,15 +301,20 @@ export default function ProductsPage() {
                               alt={product.name}
                               width={40}
                               height={40}
-                              className="w-full h-full object-contain"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         )}
-                        <div className="space-y-1">
-                          <div className="font-medium">{product.name}</div>
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="font-medium truncate">{product.name}</div>
                           {product.description && (
-                            <div className="text-sm text-muted-foreground line-clamp-2">
-                              {product.description}
+                            <div 
+                              className="text-sm text-muted-foreground line-clamp-2 break-words"
+                              title={product.description}
+                            >
+                              {product.description.length > 80 
+                                ? `${product.description.substring(0, 80)}...` 
+                                : product.description}
                             </div>
                           )}
                         </div>
@@ -325,7 +330,9 @@ export default function ProductsPage() {
                       }
                     </TableCell>
                     <TableCell className="font-mono text-sm">
-                      {product.sku || 'Yok'}
+                      <div className="truncate max-w-[100px]" title={product.sku || 'Yok'}>
+                        {product.sku || 'Yok'}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={product.isActive ? 'default' : 'secondary'}>
@@ -335,8 +342,8 @@ export default function ProductsPage() {
                     <TableCell className="text-sm">
                       {new Date(product.createdAt).toLocaleDateString('tr-TR')}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
+                    <TableCell className="text-right sticky right-0 bg-background/95 backdrop-blur border-l shadow-lg">
+                      <div className="flex items-center justify-end space-x-1">
                         <Button variant="ghost" size="sm" asChild>
                           <Link href={`/urunler/${product.id}`}>
                             <Eye className="h-4 w-4" />
@@ -359,8 +366,9 @@ export default function ProductsPage() {
                     </TableCell>
                   </TableRow>
                 ))}
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>
