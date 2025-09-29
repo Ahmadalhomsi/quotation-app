@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
             id: true,
             companyName: true,
             contactName: true,
-            email: true
+            email: true,
+            phone: true
           }
         },
         items: {

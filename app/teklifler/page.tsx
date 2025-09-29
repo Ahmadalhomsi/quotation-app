@@ -12,7 +12,8 @@ import {
   Download,
   Calendar,
   DollarSign,
-  Trash2
+  Trash2,
+  Phone
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -44,11 +45,24 @@ import { QuotationStatus, QuotationStatusLabels } from '@/lib/types'
 import { formatPrice, calculateTotal } from '@/lib/format'
 import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
+// Call tracking status (matching database values)
+type CallStatus = 'arandı' | '1 daha ara' | 'takip et'
+
+const CALL_STATUSES: CallStatus[] = ['arandı', '1 daha ara', 'takip et']
+
+const CallStatusLabels: Record<CallStatus, string> = {
+  'arandı': 'Arandı',
+  '1 daha ara': '1 Daha Ara',
+  'takip et': 'Takip Et'
+}
+
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  // Track call status for each quotation (using local state for now)
+  const [callStatuses, setCallStatuses] = useState<Record<string, CallStatus>>({})
 
   // Fetch quotations from API
   useEffect(() => {
@@ -63,6 +77,15 @@ export default function QuotationsPage() {
       
       if (response.ok) {
         setQuotations(data.quotations || [])
+        
+        // Initialize call statuses from database
+        const initialCallStatuses: Record<string, CallStatus> = {}
+        data.quotations?.forEach((quotation: any) => {
+          if (quotation.callStatus) {
+            initialCallStatuses[quotation.id] = quotation.callStatus as CallStatus
+          }
+        })
+        setCallStatuses(initialCallStatuses)
       } else {
         console.error('Teklifler alınamadı:', data.error)
         setQuotations([])
@@ -121,6 +144,33 @@ export default function QuotationsPage() {
     } catch (error) {
       console.error('PDF indirme hatası:', error)
       toast.error('PDF indirilemedi. Lütfen tekrar deneyin.')
+    }
+  }
+
+  const handleCallStatusUpdate = async (quotationId: string, newCallStatus: CallStatus) => {
+    try {
+      const response = await fetch(`/api/quotations/${quotationId}/call-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ callStatus: newCallStatus }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Arama durumu güncellenemedi')
+      }
+
+      setCallStatuses(prev => ({
+        ...prev,
+        [quotationId]: newCallStatus
+      }))
+      
+      const statusLabel = CallStatusLabels[newCallStatus]
+      toast.success(`Arama durumu güncellendi: ${statusLabel}`)
+    } catch (error) {
+      console.error('Arama durumu güncelleme hatası:', error)
+      toast.error('Arama durumu güncellenirken hata oluştu')
     }
   }
 
@@ -293,8 +343,9 @@ export default function QuotationsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Teklif No / Başlık</TableHead>
-                  <TableHead>Müşteri</TableHead>
+                  <TableHead>Müşteri / Telefon</TableHead>
                   <TableHead>Durum</TableHead>
+                  <TableHead>Arama Durumu</TableHead>
                   <TableHead>Toplam (TL)</TableHead>
                   <TableHead>Toplam (USD)</TableHead>
                   <TableHead>Geçerlilik</TableHead>
@@ -318,6 +369,12 @@ export default function QuotationsPage() {
                         <div className="text-sm text-muted-foreground">
                           {quotation.customer?.contactName}
                         </div>
+                        {quotation.customer?.phone && (
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                            <Phone className="h-3 w-3" />
+                            {quotation.customer.phone}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -339,6 +396,29 @@ export default function QuotationsPage() {
                                 'bg-orange-100 text-orange-800'
                               }`}>
                                 {QuotationStatusLabels[statusValue]}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Select 
+                        value={callStatuses[quotation.id] || 'arandı'} 
+                        onValueChange={(value: CallStatus) => handleCallStatusUpdate(quotation.id, value)}
+                      >
+                        <SelectTrigger className="w-36">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CALL_STATUSES.map((callStatusValue) => (
+                            <SelectItem key={callStatusValue} value={callStatusValue}>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                callStatusValue === 'arandı' ? 'bg-green-100 text-green-800' :
+                                callStatusValue === '1 daha ara' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {CallStatusLabels[callStatusValue]}
                               </span>
                             </SelectItem>
                           ))}

@@ -161,6 +161,9 @@ model Quotation {
   terms           String?         // Şartlar ve koşullar
   notes           String?         // Notlar
   
+  // Call tracking status
+  callStatus      String?         @default("takip et") @map("call_status") // "arandı", "1 daha ara", "takip et"
+  
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
   
