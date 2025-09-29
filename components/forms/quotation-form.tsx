@@ -50,6 +50,8 @@ import {
 } from '@/components/ui/table'
 import { CreateCustomerModal } from '@/components/modals/create-customer-modal'
 import { CreateProductModal } from '@/components/modals/create-product-modal'
+import { CustomerAutocomplete } from '@/components/ui/customer-autocomplete'
+import { ProductAutocomplete } from '@/components/ui/product-autocomplete'
 import {
     Currency,
     CreateQuotationData,
@@ -505,16 +507,12 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                         </div>
 
                         <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                {mode === 'create' && (
-                                    <CreateCustomerModal onCustomerCreated={handleCustomerCreated} />
-                                )}
-                            </div>
-                            <Select
-                                key={`customer-select-${customers.length}`}
+                            <Label>Müşteri</Label>
+                            <CustomerAutocomplete
+                                customers={customers}
                                 value={formData.customerId}
-                                onValueChange={(value) => {
-                                    setFormData(prev => ({ ...prev, customerId: value }))
+                                onSelect={(customerId) => {
+                                    setFormData(prev => ({ ...prev, customerId }))
                                     // Clear customer error when a customer is selected
                                     setErrors(prev => {
                                         const newErrors = { ...prev }
@@ -522,25 +520,20 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         return newErrors
                                     })
                                 }}
-                            >
-                                <SelectTrigger className={errors.customerId ? 'border-red-500' : ''}>
-                                    <SelectValue placeholder={customers.length === 0 ? "Müşteri bulunamadı" : "Müşteri seçin"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers.map((customer) => (
-                                        <SelectItem key={customer.id} value={customer.id}>
-                                            {customer.companyName}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onCreateNew={() => {
+                                    // You can trigger the create customer modal here
+                                    // For now, we'll keep the existing modal approach
+                                }}
+                                showCreateButton={false} // We'll keep the existing modal
+                                error={!!errors.customerId}
+                            />
+                            {mode === 'create' && (
+                                <div className="flex justify-start">
+                                    <CreateCustomerModal onCustomerCreated={handleCustomerCreated} />
+                                </div>
+                            )}
                             {errors.customerId && (
                                 <p className="text-sm text-red-500">{errors.customerId}</p>
-                            )}
-                            {customers.length === 0 && (
-                                <p className="text-sm text-amber-600">
-                                    Veritabanında müşteri bulunamadı. Yeni müşteri ekleyebilirsiniz.
-                                </p>
                             )}
                         </div>
                     </div>
@@ -640,30 +633,17 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                 <CardContent className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-6">
                         <div className="space-y-2">
-                            <div className="flex items-center space-x-2">
-                                {mode === 'create' && (
-                                    <CreateProductModal onProductCreated={handleProductCreated} />
-                                )}
-                            </div>
-                            <Select
+                            <Label>Ürün</Label>
+                            <ProductAutocomplete
+                                products={products}
                                 value={newItem.productId}
-                                onValueChange={handleProductSelect}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder={products.length === 0 ? "Ürün bulunamadı" : "Ürün seçin"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {products.map((product) => (
-                                        <SelectItem key={product.id} value={product.id}>
-                                            {product.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {products.length === 0 && (
-                                <p className="text-sm text-amber-600">
-                                    Veritabanında ürün bulunamadı. Yeni ürün ekleyebilirsiniz.
-                                </p>
+                                onSelect={handleProductSelect}
+                                showCreateButton={false} // We'll keep the existing modal
+                            />
+                            {mode === 'create' && (
+                                <div className="flex justify-start">
+                                    <CreateProductModal onProductCreated={handleProductCreated} />
+                                </div>
                             )}
                         </div>
 
