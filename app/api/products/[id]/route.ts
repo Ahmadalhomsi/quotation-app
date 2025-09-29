@@ -77,16 +77,15 @@ export async function PUT(
     const price = parseFloat(formData.get('price') as string)
     const purchasePrice = formData.get('purchasePrice') ? parseFloat(formData.get('purchasePrice') as string) : null
     const currency = formData.get('currency') as string
-    const type = formData.get('type') as string
     const sku = formData.get('sku') as string
     const isActive = (formData.get('isActive') as string) === 'true'
     const photo = formData.get('photo') as File | null
     const removePhoto = (formData.get('removePhoto') as string) === 'true'
     
     // Validation
-    if (!name || !price || !currency || !type) {
+    if (!name || !price || !currency) {
       return NextResponse.json(
-        { error: 'Ürün adı, fiyat, para birimi ve ürün tipi gereklidir' },
+        { error: 'Ürün adı, fiyat ve para birimi gereklidir' },
         { status: 400 }
       )
     }

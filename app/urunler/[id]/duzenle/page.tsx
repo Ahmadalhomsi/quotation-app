@@ -94,13 +94,13 @@ export default function EditProductPage() {
         const product: Product = data.product
         
         setFormData({
-          name: product.name,
+          name: product.name || '',
           description: product.description || '',
-          price: Number(product.price),
-          purchasePrice: product.purchasePrice ? Number(product.purchasePrice) : 0,
-          currency: product.currency,
+          price: Number(product.price) || 0,
+          purchasePrice: product.purchasePrice ? Number(product.purchasePrice) : undefined,
+          currency: product.currency || Currency.TL,
           sku: product.sku || '',
-          isActive: product.isActive
+          isActive: product.isActive ?? true
         })
         
         if (product.photoUrl) {
@@ -132,6 +132,10 @@ export default function EditProductPage() {
 
     if (!formData.price || formData.price <= 0) {
       newErrors.price = 'Satış fiyatı 0\'dan büyük olmalıdır'
+    }
+
+    if (!formData.currency) {
+      newErrors.currency = 'Para birimi seçilmelidir'
     }
 
     if (formData.purchasePrice && formData.purchasePrice < 0) {
