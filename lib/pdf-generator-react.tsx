@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 4,
+    minHeight: 120,
   },
   quotationLeft: {
     flex: 1,
@@ -65,6 +66,7 @@ const styles = StyleSheet.create({
   quotationRight: {
     flex: 1,
     textAlign: 'right',
+    paddingLeft: 12,
   },
   quotationTitle: {
     fontSize: 16,
@@ -268,9 +270,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 7,
     color: '#6B7280',
-    paddingTop: 6,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+    lineHeight: 1.4,
   },
 })
 
@@ -324,7 +327,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         <View style={styles.quotationInfo}>
           <View style={styles.quotationLeft}>
             <Text style={styles.quotationTitle}>
-              TEKLİF
+              {quotation.title}
             </Text>
             <Text style={styles.quotationNumber}>
               No: {quotation.quotationNumber}
@@ -348,35 +351,53 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
               {quotation.status === 'ACCEPTED' && 'Kabul Edildi'}
               {quotation.status === 'REJECTED' && 'Reddedildi'}
             </Text>
+            
+            {/* Customer Information */}
+            <Text style={[styles.statusTitle, { marginTop: 12 }]}>
+              MÜŞTERİ BİLGİLERİ
+            </Text>
+            <View style={{ marginTop: 4 }}>
+              <Text style={[styles.customerText, { fontSize: 8, fontWeight: 'bold', color: '#374151' }]}>
+                {quotation.customer.companyName}
+              </Text>
+              <Text style={[styles.customerText, { fontSize: 7 }]}>
+                {quotation.customer.contactName}
+              </Text>
+              <Text style={[styles.customerText, { fontSize: 7 }]}>
+                {quotation.customer.email}
+              </Text>
+              {quotation.customer.phone && (
+                <Text style={[styles.customerText, { fontSize: 7 }]}>
+                  {quotation.customer.phone}
+                </Text>
+              )}
+              {quotation.customer.address && (
+                <Text style={[styles.customerText, { fontSize: 7 }]}>
+                  {quotation.customer.address}
+                </Text>
+              )}
+              {quotation.customer.taxNumber && (
+                <Text style={[styles.customerText, { fontSize: 7 }]}>
+                  Vergi No: {quotation.customer.taxNumber}
+                </Text>
+              )}
+              {quotation.customer.taxOffice && (
+                <Text style={[styles.customerText, { fontSize: 7 }]}>
+                  V.D: {quotation.customer.taxOffice}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* Customer Information */}
-        <Text style={styles.sectionTitle}>MÜŞTERİ BİLGİLERİ</Text>
-        <View style={styles.customerInfo}>
-          <Text style={styles.customerTitle}>{quotation.customer.companyName}</Text>
-          <Text style={styles.customerText}>İletişim: {quotation.customer.contactName}</Text>
-          <Text style={styles.customerText}>E-posta: {quotation.customer.email}</Text>
-          {quotation.customer.phone && (
-            <Text style={styles.customerText}>Telefon: {quotation.customer.phone}</Text>
-          )}
-          {quotation.customer.address && (
-            <Text style={styles.customerText}>Adres: {quotation.customer.address}</Text>
-          )}
-          {quotation.customer.taxNumber && (
-            <Text style={styles.customerText}>Vergi No: {quotation.customer.taxNumber}</Text>
-          )}
-          {quotation.customer.taxOffice && (
-            <Text style={styles.customerText}>Vergi Dairesi: {quotation.customer.taxOffice}</Text>
-          )}
-        </View>
-
-        {/* Quotation Title and Description */}
-        <Text style={styles.sectionTitle}>{quotation.title}</Text>
+        {/* Quotation Description */}
         {quotation.description && (
-          <Text style={styles.descriptionText}>
-            {quotation.description}
-          </Text>
+          <View style={{ marginBottom: 15 }}>
+            <Text style={styles.sectionTitle}>AÇIKLAMA</Text>
+            <Text style={styles.descriptionText}>
+              {quotation.description}
+            </Text>
+          </View>
         )}
 
         {/* Items Table */}
@@ -520,10 +541,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
         )}
 
         {/* Footer */}
-        <Text style={styles.footer}>
-          {companyInfo.name} - {companyInfo.address} - Tel: {companyInfo.phone} - {companyInfo.email}
-          {companyInfo.taxNumber && ` - Vergi No: ${companyInfo.taxNumber}`}
-          {companyInfo.taxOffice && ` - Vergi Dairesi: ${companyInfo.taxOffice}`}
+        <Text style={styles.footer} fixed>
+          MAPOS - Yeşilove Mah. 2602. Sk. No:3/A Küçükçekmece / İSTANBUL - Tel: +90 537 204 99 81 - info@mapos.com.tr
+          {'\n'}Vergi No: 4810571592 - Küçükçekmece V.D
         </Text>
       </Page>
     </Document>
