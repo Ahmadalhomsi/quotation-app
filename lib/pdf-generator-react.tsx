@@ -558,19 +558,51 @@ export class ReactPdfGenerator {
     return pdfBlob
   }
 
-  static async downloadQuotationPdf(data: PdfExportData, filename: string = 'teklif.pdf'): Promise<void> {
+  static async downloadQuotationPdf(data: PdfExportData, filename?: string): Promise<void> {
     const pdfBlob = await this.generateQuotationPdf(data)
+    
+    // Generate default filename if not provided
+    let finalFilename = filename
+    if (!finalFilename) {
+      const customerName = sanitizeFilename(data.quotation.customer.contactName)
+      const companyName = sanitizeFilename(data.quotation.customer.companyName)
+      finalFilename = `${customerName}_${companyName}.pdf`
+    }
     
     // Create download link
     const url = URL.createObjectURL(pdfBlob)
     const link = document.createElement('a')
     link.href = url
-    link.download = filename
+    link.download = finalFilename
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   }
+}
+
+// Helper function to sanitize filename
+const sanitizeFilename = (str: string): string => {
+  // First convert Turkish characters to English equivalents
+  const turkishToEnglish = (text: string): string => {
+    const turkishChars: Record<string, string> = {
+      'ç': 'c', 'Ç': 'C',
+      'ğ': 'g', 'Ğ': 'G',
+      'ı': 'i', 'I': 'I',
+      'İ': 'I', 'i': 'i',
+      'ö': 'o', 'Ö': 'O',
+      'ş': 's', 'Ş': 'S',
+      'ü': 'u', 'Ü': 'U'
+    }
+    
+    return text.replace(/[çÇğĞıIİiöÖşŞüÜ]/g, (match) => turkishChars[match] || match)
+  }
+  
+  return turkishToEnglish(str)
+    .replace(/[^\w\s-]/g, '') // Remove special characters except word chars, spaces, and hyphens
+    .replace(/\s+/g, '_') // Replace spaces with underscores
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .trim()
 }
 
 // Simple function for direct PDF generation (compatibility with existing code)
@@ -580,16 +612,21 @@ export async function generatePDF(quotationData: PdfExportData['quotation']): Pr
     companyInfo: {
       name: 'MAPOS',
       address: 'İstanbul, Türkiye',
-      phone: '+90 (555) 123-4567',
+      phone: '+90 537 204 99 81',
       email: 'info@mapos.com.tr',
       website: 'www.mapos.com.tr',
-      taxNumber: '1234567890',
-      taxOffice: 'Kadıköy'
+      taxNumber: '4810571592',
+      taxOffice: 'Küçükçekmece V.D'
     },
     exchangeRate: 30.0
   }
   
-  await ReactPdfGenerator.downloadQuotationPdf(data, `teklif-${quotationData.quotationNumber}.pdf`)
+  // Create filename with customer name and company name
+  const customerName = sanitizeFilename(quotationData.customer.contactName)
+  const companyName = sanitizeFilename(quotationData.customer.companyName)
+  const filename = `${customerName}_${companyName}.pdf`
+  
+  await ReactPdfGenerator.downloadQuotationPdf(data, filename)
 }
 
 export default QuotationPDF
