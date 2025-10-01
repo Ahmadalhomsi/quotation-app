@@ -23,8 +23,13 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
     padding: 20,
+    paddingBottom: 30, // Add extra bottom padding for footer space
     fontFamily: 'Open Sans',
     fontSize: 9,
+  },
+  contentContainer: {
+    flex: 1,
+    marginBottom: 20, // Ensure content doesn't overlap with footer
   },
   header: {
     backgroundColor: '#FF6B35',
@@ -264,7 +269,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     position: 'absolute',
-    bottom: 15,
+    bottom: 20,
     left: 20,
     right: 20,
     textAlign: 'center',
@@ -274,6 +279,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     lineHeight: 1.4,
+    backgroundColor: '#FFFFFF', // Add background to ensure it doesn't get overlapped
   },
 })
 
@@ -308,6 +314,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={styles.contentContainer}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -420,6 +427,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
               styles.tableRow, 
               index % 2 === 0 ? styles.tableRowEven : {}
             ]}
+            wrap={false}
           >
             <View style={styles.productName}>
               {item.product.photoUrl && (
@@ -539,6 +547,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             )}
           </View>
         )}
+        </View>
 
         {/* Footer */}
         <Text style={styles.footer} fixed>
