@@ -12,7 +12,8 @@ import {
   Building,
   Mail,
   Phone,
-  Tags
+  Tags,
+  FileText
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -64,6 +65,9 @@ interface Customer {
       description?: string
     }
   }>
+  _count?: {
+    quotations: number
+  }
   createdAt: string
   updatedAt: string
 }
@@ -186,6 +190,11 @@ export default function CustomersPage() {
     const createdDate = new Date(customer.createdAt)
     return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear
   }).length
+
+  // Calculate total quotations
+  const totalQuotations = customers.reduce((total, customer) => {
+    return total + (customer._count?.quotations || 0)
+  }, 0)
 
   if (isLoading) {
     return (
@@ -322,6 +331,12 @@ export default function CustomersPage() {
                       <TableHead className="w-[180px]">İletişim Bilgileri</TableHead>
                       <TableHead className="w-[300px]">Müşteri Tipleri & Öncelik</TableHead>
                       <TableHead className="w-[160px]">Vergi Bilgileri</TableHead>
+                      <TableHead className="w-[100px]">
+                        <div className="flex items-center justify-center gap-1">
+                          <FileText className="h-4 w-4" />
+                          Teklifler
+                        </div>
+                      </TableHead>
                       <TableHead className="w-[120px]">Kayıt Tarihi</TableHead>
                       <TableHead className="text-right w-[120px]">İşlemler</TableHead>
                     </TableRow>
@@ -424,6 +439,19 @@ export default function CustomersPage() {
                             <div className="text-muted-foreground">{customer.taxOffice || 'Belirtilmemiş'}</div>
                           </div>
                         </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center">
+                            {customer._count?.quotations ? (
+                              <Badge variant="default" className="text-xs">
+                                {customer._count.quotations} Teklif
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs text-muted-foreground">
+                                Teklif Yok
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-sm">
                           {new Date(customer.createdAt).toLocaleDateString('tr-TR')}
                         </TableCell>
@@ -492,14 +520,14 @@ export default function CustomersPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Aktif Teklifler
+                  Toplam Teklifler
                 </CardTitle>
-                <Building className="h-4 w-4 text-muted-foreground" />
+                <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">{totalQuotations}</div>
                 <p className="text-xs text-muted-foreground">
-                  Bekleyen teklif
+                  Oluşturulan teklif
                 </p>
               </CardContent>
             </Card>
