@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -13,7 +14,10 @@ import {
   Mail,
   Phone,
   Tags,
-  FileText
+  FileText,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -72,6 +76,9 @@ interface Customer {
   updatedAt: string
 }
 
+type SortField = 'companyName' | 'contactName' | 'email' | 'phone' | 'priority' | 'quotations' | 'createdAt'
+type SortDirection = 'asc' | 'desc'
+
 export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -80,6 +87,8 @@ export default function CustomersPage() {
   const [isLoadingTypes, setIsLoadingTypes] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('customers')
+  const [sortField, setSortField] = useState<SortField>('companyName')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
 
   // Fetch customers and customer types from API
   useEffect(() => {
@@ -117,16 +126,93 @@ export default function CustomersPage() {
     fetchData()
   }, [])
 
-  const filteredCustomers = customers.filter(customer => {
-    const searchLower = searchTerm.toLowerCase()
-    return (
-      customer.companyName.toLowerCase().includes(searchLower) ||
-      customer.contactName.toLowerCase().includes(searchLower) ||
-      customer.email.toLowerCase().includes(searchLower) ||
-      customer.phone.includes(searchTerm) ||
-      customer.taxNumber?.includes(searchTerm)
-    )
-  })
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const sortedAndFilteredCustomers = customers
+    .filter(customer => {
+      const searchLower = searchTerm.toLowerCase()
+      return (
+        customer.companyName.toLowerCase().includes(searchLower) ||
+        customer.contactName.toLowerCase().includes(searchLower) ||
+        customer.email.toLowerCase().includes(searchLower) ||
+        customer.phone.includes(searchTerm) ||
+        customer.taxNumber?.includes(searchTerm)
+      )
+    })
+    .sort((a, b) => {
+      let aValue: any
+      let bValue: any
+
+      switch (sortField) {
+        case 'companyName':
+          aValue = a.companyName.toLowerCase()
+          bValue = b.companyName.toLowerCase()
+          break
+        case 'contactName':
+          aValue = a.contactName.toLowerCase()
+          bValue = b.contactName.toLowerCase()
+          break
+        case 'email':
+          aValue = a.email?.toLowerCase() || ''
+          bValue = b.email?.toLowerCase() || ''
+          break
+        case 'phone':
+          aValue = a.phone || ''
+          bValue = b.phone || ''
+          break
+        case 'priority':
+          aValue = a.priority
+          bValue = b.priority
+          break
+        case 'quotations':
+          aValue = a._count?.quotations || 0
+          bValue = b._count?.quotations || 0
+          break
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) {
+        return sortDirection === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortDirection === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+
+  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-auto p-0 font-medium hover:bg-transparent"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {sortField === field ? (
+          sortDirection === 'asc' ? (
+            <ArrowUp className="h-3 w-3" />
+          ) : (
+            <ArrowDown className="h-3 w-3" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3 w-3 opacity-50" />
+        )}
+      </div>
+    </Button>
+  )
 
   const handleDelete = async (customerId: string) => {
     try {
@@ -301,11 +387,11 @@ export default function CustomersPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">
-                Müşteriler ({filteredCustomers.length})
+                Müşteriler ({sortedAndFilteredCustomers.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {filteredCustomers.length === 0 ? (
+              {sortedAndFilteredCustomers.length === 0 ? (
                 <div className="text-center py-12">
                   <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">
@@ -327,22 +413,31 @@ export default function CustomersPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[200px]">Şirket / İletişim</TableHead>
-                      <TableHead className="w-[180px]">İletişim Bilgileri</TableHead>
-                      <TableHead className="w-[300px]">Müşteri Tipleri & Öncelik</TableHead>
-                      <TableHead className="w-[160px]">Vergi Bilgileri</TableHead>
-                      <TableHead className="w-[100px]">
-                        <div className="flex items-center justify-center gap-1">
-                          <FileText className="h-4 w-4" />
-                          Teklifler
-                        </div>
+                      <TableHead className="w-[200px]">
+                        <SortButton field="companyName">Şirket / İletişim</SortButton>
                       </TableHead>
-                      <TableHead className="w-[120px]">Kayıt Tarihi</TableHead>
+                      <TableHead className="w-[180px]">
+                        <SortButton field="email">İletişim Bilgileri</SortButton>
+                      </TableHead>
+                      <TableHead className="w-[220px]">
+                        <SortButton field="priority">Müşteri Tipleri & Öncelik</SortButton>
+                      </TableHead>
+                      <TableHead className="w-[100px]">
+                        <SortButton field="quotations">
+                          <div className="flex items-center justify-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            Teklifler
+                          </div>
+                        </SortButton>
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        <SortButton field="createdAt">Kayıt Tarihi</SortButton>
+                      </TableHead>
                       <TableHead className="text-right w-[120px]">İşlemler</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredCustomers.map((customer) => (
+                    {sortedAndFilteredCustomers.map((customer) => (
                       <TableRow key={customer.id}>
                         <TableCell>
                           <div className="space-y-1">
@@ -382,17 +477,8 @@ export default function CustomersPage() {
                             
                             {/* Customer Types */}
                             <div className="space-y-1">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center">
                                 <span className="text-xs text-muted-foreground">Tipler:</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={() => {/* TODO: Add inline edit functionality */}}
-                                  title="Tipleri düzenle"
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
                               </div>
                               {customer.customerTypes && customer.customerTypes.length > 0 ? (
                                 <div className="space-y-1">
@@ -431,12 +517,6 @@ export default function CustomersPage() {
                                 </Badge>
                               )}
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1 text-sm">
-                            <div>VN: {customer.taxNumber || 'Belirtilmemiş'}</div>
-                            <div className="text-muted-foreground">{customer.taxOffice || 'Belirtilmemiş'}</div>
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
