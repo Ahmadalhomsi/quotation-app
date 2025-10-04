@@ -631,22 +631,24 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-6">
-                        <div className="space-y-2">
-                            <Label>Ürün</Label>
-                            <ProductAutocomplete
-                                products={products}
-                                value={newItem.productId}
-                                onSelect={handleProductSelect}
-                                showCreateButton={false} // We'll keep the existing modal
-                            />
-                            {mode === 'create' && (
-                                <div className="flex justify-start">
-                                    <CreateProductModal onProductCreated={handleProductCreated} />
-                                </div>
-                            )}
-                        </div>
+                    {/* Product Selection Row */}
+                    <div className="space-y-2">
+                        <Label>Ürün</Label>
+                        <ProductAutocomplete
+                            products={products}
+                            value={newItem.productId}
+                            onSelect={handleProductSelect}
+                            showCreateButton={false} // We'll keep the existing modal
+                        />
+                        {mode === 'create' && (
+                            <div className="flex justify-start mt-2">
+                                <CreateProductModal onProductCreated={handleProductCreated} />
+                            </div>
+                        )}
+                    </div>
 
+                    {/* Other Fields Row */}
+                    <div className="grid gap-4 md:grid-cols-6">
                         <div className="space-y-2">
                             <Label>Miktar</Label>
                             <Input
@@ -684,7 +686,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 md:col-span-2">
                             <Label>Para Birimi</Label>
                             <Select
                                 value={newItem.currency}
