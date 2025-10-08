@@ -65,21 +65,43 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
+        <Command
+          filter={(value, search) => {
+            // Custom filter for exact word matching (case-insensitive with Turkish support)
+            if (!search) return 1
+            
+            const searchLower = search.toLocaleLowerCase('tr-TR').trim()
+            const valueLower = value.toLocaleLowerCase('tr-TR')
+            
+            // Check if the search term appears as a complete word or substring
+            if (valueLower.includes(searchLower)) {
+              // Prioritize exact matches at the beginning
+              if (valueLower.startsWith(searchLower)) {
+                return 1
+              }
+              // Then matches that contain the word
+              return 0.8
+            }
+            
+            return 0
+          }}
+        >
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
                 const isSelected = value === option.value
+                // Use searchableText for filtering, but keep the actual ID for selection
+                const searchValue = option.searchableText || option.label.toLocaleLowerCase('tr-TR')
                 return (
                   <CommandItem
                     key={option.value}
-                    value={option.value}
-                    keywords={option.searchableText ? [option.searchableText, option.label] : [option.label]}
+                    value={searchValue}
                     disabled={false}
-                    onSelect={(currentValue) => {
-                      onSelect?.(currentValue === value ? "" : currentValue)
+                    onSelect={() => {
+                      // Always select the actual option.value (ID), not the search value
+                      onSelect?.(option.value === value ? "" : option.value)
                       setOpen(false)
                     }}
                   >

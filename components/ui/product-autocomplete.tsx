@@ -43,7 +43,7 @@ export function ProductAutocomplete({
   const options: ComboboxOption[] = products.map((product) => ({
     value: product.id,
     label: `${product.name} - ${product.price} ${product.currency}`,
-    searchableText: `${product.name} ${product.description || ''}`.toLowerCase(),
+    searchableText: `${product.name} ${product.description || ''}`.toLocaleLowerCase('tr-TR'),
   }))
 
   return (

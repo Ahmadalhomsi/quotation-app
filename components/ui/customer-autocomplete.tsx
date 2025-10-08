@@ -40,7 +40,7 @@ export function CustomerAutocomplete({
   const options: ComboboxOption[] = customers.map((customer) => ({
     value: customer.id,
     label: customer.companyName,
-    searchableText: `${customer.companyName} ${customer.contactName} ${customer.email || ''}`.toLowerCase(),
+    searchableText: `${customer.companyName} ${customer.contactName} ${customer.email || ''}`.toLocaleLowerCase('tr-TR'),
   }))
 
   return (
