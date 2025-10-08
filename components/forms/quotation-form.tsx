@@ -266,6 +266,8 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
         currency: Currency.TL,
         discount: 0
     })
+    
+    const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
 
     const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -335,19 +337,61 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
         })
     }
 
-    const handleProductSelect = (productId: string) => {
-        const product = products.find(p => p.id === productId)
-        if (product) {
-            setNewItem(prev => ({
-                ...prev,
-                productId,
-                unitPrice: Number(product.price),
-                currency: product.currency
-            }))
+    const handleProductSelect = (productId: string | string[]) => {
+        if (Array.isArray(productId)) {
+            // Multiple selection
+            setSelectedProductIds(productId)
+        } else {
+            // Single selection (legacy mode)
+            const product = products.find(p => p.id === productId)
+            if (product) {
+                setNewItem(prev => ({
+                    ...prev,
+                    productId,
+                    unitPrice: Number(product.price),
+                    currency: product.currency
+                }))
+            }
         }
     }
 
     const addItem = () => {
+        // Check if we have multiple products selected
+        if (selectedProductIds.length > 0) {
+            // Add multiple products
+            const newItems: QuotationItem[] = selectedProductIds.map(productId => {
+                const product = products.find(p => p.id === productId)
+                if (!product) return null
+                
+                const discountMultiplier = 1 - ((newItem.discount || 0) / 100)
+                const totalPrice = (newItem.quantity || 1) * Number(product.price) * discountMultiplier
+
+                return {
+                    id: `temp-${Date.now()}-${productId}`,
+                    productId,
+                    quantity: newItem.quantity || 1,
+                    unitPrice: Number(product.price),
+                    currency: product.currency,
+                    discount: newItem.discount || 0,
+                    totalPrice,
+                    product
+                }
+            }).filter(Boolean) as QuotationItem[]
+
+            setItems(prev => [...prev, ...newItems])
+            setSelectedProductIds([])
+            setNewItem({
+                productId: '',
+                quantity: 1,
+                unitPrice: 0,
+                currency: Currency.TL,
+                discount: 0
+            })
+            setErrors({})
+            return
+        }
+
+        // Single product mode (legacy)
         if (!newItem.productId || !newItem.quantity || !newItem.unitPrice) {
             setErrors({ items: 'Lütfen tüm ürün bilgilerini doldurun' })
             return
@@ -636,9 +680,10 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                         <Label>Ürün</Label>
                         <ProductAutocomplete
                             products={products}
-                            value={newItem.productId}
+                            value={selectedProductIds.length > 0 ? selectedProductIds : newItem.productId}
                             onSelect={handleProductSelect}
                             showCreateButton={false} // We'll keep the existing modal
+                            multiple={true}
                         />
                         {mode === 'create' && (
                             <div className="flex justify-start mt-2">
@@ -729,7 +774,10 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             <Label>&nbsp;</Label>
                             <Button type="button" onClick={addItem} className="w-full">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Ekle
+                                {selectedProductIds.length > 0 
+                                    ? `${selectedProductIds.length} Ürünü Ekle`
+                                    : 'Ekle'
+                                }
                             </Button>
                         </div>
                     </div>

@@ -27,13 +27,14 @@ export interface ComboboxOption {
 
 interface ComboboxProps {
   options: ComboboxOption[]
-  value?: string
-  onSelect?: (value: string) => void
+  value?: string | string[]
+  onSelect?: (value: string | string[]) => void
   placeholder?: string
   searchPlaceholder?: string
   emptyText?: string
   className?: string
   disabled?: boolean
+  multiple?: boolean
 }
 
 export function Combobox({
@@ -45,10 +46,24 @@ export function Combobox({
   emptyText = "No results found.",
   className,
   disabled = false,
+  multiple = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
 
-  const selectedOption = options.find((option) => option.value === value)
+  const selectedValues = multiple ? (Array.isArray(value) ? value : []) : []
+  const selectedOption = multiple ? null : options.find((option) => option.value === value)
+  
+  const getDisplayText = () => {
+    if (multiple) {
+      if (selectedValues.length === 0) return placeholder
+      if (selectedValues.length === 1) {
+        const option = options.find(opt => opt.value === selectedValues[0])
+        return option?.label || placeholder
+      }
+      return `${selectedValues.length} ürün seçildi`
+    }
+    return selectedOption ? selectedOption.label : placeholder
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -60,7 +75,7 @@ export function Combobox({
           className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          {getDisplayText()}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -91,7 +106,9 @@ export function Combobox({
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => {
-                const isSelected = value === option.value
+                const isSelected = multiple 
+                  ? selectedValues.includes(option.value)
+                  : value === option.value
                 // Use searchableText for filtering, but keep the actual ID for selection
                 const searchValue = option.searchableText || option.label.toLocaleLowerCase('tr-TR')
                 return (
@@ -100,9 +117,17 @@ export function Combobox({
                     value={searchValue}
                     disabled={false}
                     onSelect={() => {
-                      // Always select the actual option.value (ID), not the search value
-                      onSelect?.(option.value === value ? "" : option.value)
-                      setOpen(false)
+                      if (multiple) {
+                        const newValues = isSelected
+                          ? selectedValues.filter(v => v !== option.value)
+                          : [...selectedValues, option.value]
+                        onSelect?.(newValues)
+                        // Don't close dropdown in multiple mode
+                      } else {
+                        // Single selection mode
+                        onSelect?.(option.value === value ? "" : option.value)
+                        setOpen(false)
+                      }
                     }}
                   >
                     <Check
@@ -116,6 +141,17 @@ export function Combobox({
                 )
               })}
             </CommandGroup>
+            {multiple && selectedValues.length > 0 && (
+              <div className="p-2 border-t">
+                <Button
+                  size="sm"
+                  onClick={() => setOpen(false)}
+                  className="w-full"
+                >
+                  Seçimi Tamamla ({selectedValues.length} ürün)
+                </Button>
+              </div>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

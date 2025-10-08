@@ -19,14 +19,15 @@ interface Product {
 
 interface ProductAutocompleteProps {
   products: Product[]
-  value?: string
-  onSelect?: (productId: string) => void
+  value?: string | string[]
+  onSelect?: (productId: string | string[]) => void
   onCreateNew?: () => void
   placeholder?: string
   className?: string
   disabled?: boolean
   showCreateButton?: boolean
   error?: boolean
+  multiple?: boolean
 }
 
 export function ProductAutocomplete({
@@ -39,6 +40,7 @@ export function ProductAutocomplete({
   disabled = false,
   showCreateButton = true,
   error = false,
+  multiple = false,
 }: ProductAutocompleteProps) {
   const options: ComboboxOption[] = products.map((product) => ({
     value: product.id,
@@ -66,11 +68,12 @@ export function ProductAutocomplete({
             options={options}
             value={value}
             onSelect={onSelect}
-            placeholder={products.length === 0 ? "Ürün bulunamadı" : placeholder}
+            placeholder={products.length === 0 ? "Ürün bulunamadı" : (multiple ? "Ürünleri seçin..." : placeholder)}
             searchPlaceholder="Ürün ara..."
             emptyText="Ürün bulunamadı"
             className={cn("w-full", error && "border-red-500", className)}
             disabled={disabled || products.length === 0}
+            multiple={multiple}
           />
         </div>
       </div>

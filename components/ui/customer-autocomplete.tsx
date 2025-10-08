@@ -62,7 +62,11 @@ export function CustomerAutocomplete({
           <Combobox
             options={options}
             value={value}
-            onSelect={onSelect}
+            onSelect={onSelect ? (value => {
+              if (typeof value === "string") {
+                onSelect(value)
+              }
+            }) : undefined}
             placeholder={customers.length === 0 ? "Müşteri bulunamadı" : placeholder}
             searchPlaceholder="Müşteri ara..."
             emptyText="Müşteri bulunamadı"
