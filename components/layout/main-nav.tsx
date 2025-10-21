@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
   Package, 
@@ -58,9 +59,13 @@ export function MainNav() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link className="mr-6 flex items-center space-x-2" href="/">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-sm font-bold">M</span>
-            </div>
+            <Image 
+              src="/web-app-manifest-512x512.png" 
+              alt="MAPOS Logo" 
+              width={32} 
+              height={32}
+              className="rounded-lg"
+            />
             <span className="hidden font-bold sm:inline-block">
               MAPOS Teklif Sistemi
             </span>
@@ -100,9 +105,13 @@ export function MainNav() {
                 href="/"
                 onClick={() => setIsOpen(false)}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <span className="text-sm font-bold">M</span>
-                </div>
+                <Image 
+                  src="/web-app-manifest-512x512.png" 
+                  alt="MAPOS Logo" 
+                  width={32} 
+                  height={32}
+                  className="rounded-lg"
+                />
                 <span className="font-bold">MAPOS</span>
               </Link>
             </div>
@@ -144,9 +153,13 @@ export function MainNav() {
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <Link className="flex items-center space-x-2 md:hidden" href="/">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <span className="text-sm font-bold">M</span>
-              </div>
+              <Image 
+                src="/web-app-manifest-512x512.png" 
+                alt="MAPOS Logo" 
+                width={32} 
+                height={32}
+                className="rounded-lg"
+              />
               <span className="font-bold">MAPOS</span>
             </Link>
           </div>

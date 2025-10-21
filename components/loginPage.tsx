@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Lock, User, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -120,8 +121,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 px-4">
       <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
-            <Lock className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center">
+            <Image 
+              src="/web-app-manifest-512x512.png" 
+              alt="MAPOS Logo" 
+              width={256} 
+              height={256}
+              className="rounded-lg"
+            />
           </div>
           <CardTitle className="text-2xl font-bold dark:text-white">MAPOS Giriş</CardTitle>
           <CardDescription className="dark:text-gray-300">
