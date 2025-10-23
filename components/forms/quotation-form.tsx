@@ -188,8 +188,11 @@ function SortableTableRow({
                         min="0"
                         max="100"
                         step="0.01"
-                        value={item.discount || 0}
-                        onChange={(e) => updateItemDiscount(index, parseFloat(e.target.value) || 0)}
+                        value={item.discount ?? 0}
+                        onChange={(e) => {
+                            const value = parseFloat(e.target.value)
+                            updateItemDiscount(index, isNaN(value) ? 0 : value)
+                        }}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                                 e.preventDefault()
@@ -341,8 +344,18 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
         if (Array.isArray(productId)) {
             // Multiple selection
             setSelectedProductIds(productId)
+            
+            // If switching to multiple products, keep the currency and other settings in newItem
+            // Don't override currency - let user's selection persist
+            if (productId.length > 0 && !newItem.productId) {
+                // If no unit price set yet, could optionally set from first product
+                // but we'll let the user's form values persist
+            }
         } else {
             // Single selection (legacy mode)
+            // Clear multiple selection
+            setSelectedProductIds([])
+            
             const product = products.find(p => p.id === productId)
             if (product) {
                 setNewItem(prev => ({
@@ -363,15 +376,23 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                 const product = products.find(p => p.id === productId)
                 if (!product) return null
                 
+                // Use the user-selected currency from the form
+                // If user hasn't modified the unit price (it's 0), use the product's price
+                // Otherwise use the user-specified unit price
+                const selectedCurrency = newItem.currency || Currency.TL
+                const selectedUnitPrice = (newItem.unitPrice && newItem.unitPrice > 0) 
+                    ? newItem.unitPrice 
+                    : Number(product.price)
+                
                 const discountMultiplier = 1 - ((newItem.discount || 0) / 100)
-                const totalPrice = (newItem.quantity || 1) * Number(product.price) * discountMultiplier
+                const totalPrice = (newItem.quantity || 1) * selectedUnitPrice * discountMultiplier
 
                 return {
                     id: `temp-${Date.now()}-${productId}`,
                     productId,
                     quantity: newItem.quantity || 1,
-                    unitPrice: Number(product.price),
-                    currency: product.currency,
+                    unitPrice: selectedUnitPrice,
+                    currency: selectedCurrency,
                     discount: newItem.discount || 0,
                     totalPrice,
                     product
@@ -441,14 +462,17 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     }
 
     const updateItemDiscount = (index: number, newDiscount: number) => {
-        setItems(prev => prev.map((item, i) => {
-            if (i === index) {
-                const discountMultiplier = 1 - (newDiscount / 100)
-                const totalPrice = item.quantity * item.unitPrice * discountMultiplier
-                return { ...item, discount: newDiscount, totalPrice }
-            }
-            return item
-        }))
+        setItems(prev => {
+            const updated = prev.map((item, i) => {
+                if (i === index) {
+                    const discountMultiplier = 1 - (newDiscount / 100)
+                    const totalPrice = item.quantity * item.unitPrice * discountMultiplier
+                    return { ...item, discount: newDiscount, totalPrice }
+                }
+                return item
+            })
+            return updated
+        })
     }
 
     const updateItemUnitPrice = (index: number, newUnitPrice: number) => {

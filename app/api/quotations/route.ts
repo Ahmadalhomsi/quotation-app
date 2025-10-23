@@ -150,7 +150,6 @@ export async function POST(request: NextRequest) {
             currency: string;
             discount?: number;
             productName: string;
-            productType: string;
           }) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -158,8 +157,7 @@ export async function POST(request: NextRequest) {
             totalPrice: item.totalPrice,
             currency: item.currency,
             discount: item.discount || 0,
-            productName: item.productName,
-            productType: item.productType
+            productName: item.productName
           }))
         }
       },

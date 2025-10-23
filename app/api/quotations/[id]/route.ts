@@ -171,8 +171,9 @@ export async function PUT(
           unitPrice: number;
           totalPrice: number;
           currency: string;
+          discount?: number;
           productName: string;
-          productType: string;
+          productType?: string;
         }) => ({
           quotationId: resolvedParams.id,
           productId: item.productId,
@@ -180,8 +181,8 @@ export async function PUT(
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
           currency: item.currency,
-          productName: item.productName,
-          productType: item.productType
+          discount: item.discount || 0,
+          productName: item.productName
         }))
       })
 
