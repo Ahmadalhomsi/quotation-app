@@ -114,8 +114,11 @@ export async function PUT(
     let totalTL = 0
     let totalUSD = 0
     const exchangeRate = body.exchangeRate || existingQuotation.exchangeRate || 40.0
+    const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : existingQuotation.kdvEnabled
+    const kdvRate = body.kdvRate !== undefined ? body.kdvRate : existingQuotation.kdvRate
 
     if (body.items && body.items.length > 0) {
+      // Sum up item totals (without KDV)
       for (const item of body.items) {
         if (item.currency === 'TL') {
           totalTL += item.totalPrice
@@ -124,6 +127,12 @@ export async function PUT(
           totalUSD += item.totalPrice
           totalTL += item.totalPrice * exchangeRate
         }
+      }
+      
+      // Apply KDV if enabled
+      if (kdvEnabled) {
+        totalTL = totalTL * (1 + kdvRate / 100)
+        totalUSD = totalUSD * (1 + kdvRate / 100)
       }
     } else {
       // Keep existing totals if no items provided
@@ -143,6 +152,8 @@ export async function PUT(
         totalTL,
         totalUSD,
         exchangeRate,
+        kdvEnabled,
+        kdvRate,
         terms: body.terms,
         notes: body.notes
       },
