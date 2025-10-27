@@ -22,3 +22,8 @@ exec(`pg_dump "${source}" > backup.sql`, (err) => {
     console.log("🎉 Restore completed into mp_customers");
   });
 });
+
+
+/*
+pg_restore --verbose --clean --if-exists -d "postgresql://postgres:ahmad@localhost:5432/mapos_q" "backup.sql"
+*/
