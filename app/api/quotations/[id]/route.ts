@@ -116,23 +116,27 @@ export async function PUT(
     const exchangeRate = body.exchangeRate || existingQuotation.exchangeRate || 40.0
     const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : existingQuotation.kdvEnabled
     const kdvRate = body.kdvRate !== undefined ? body.kdvRate : existingQuotation.kdvRate
+    const totalDiscount = body.totalDiscount !== undefined ? body.totalDiscount : (existingQuotation.totalDiscount ? Number(existingQuotation.totalDiscount) : 0)
 
     if (body.items && body.items.length > 0) {
-      // Sum up item totals (without KDV)
+      // Sum up item totals with individual KDV rates
       for (const item of body.items) {
+        const itemKdvRate = item.kdvRate || 20
+        const itemTotal = item.totalPrice
+        const itemWithKdv = kdvEnabled ? itemTotal * (1 + itemKdvRate / 100) : itemTotal
+        
         if (item.currency === 'TL') {
-          totalTL += item.totalPrice
-          totalUSD += item.totalPrice / exchangeRate
+          totalTL += itemWithKdv
         } else {
-          totalUSD += item.totalPrice
-          totalTL += item.totalPrice * exchangeRate
+          totalUSD += itemWithKdv
         }
       }
       
-      // Apply KDV if enabled
-      if (kdvEnabled) {
-        totalTL = totalTL * (1 + kdvRate / 100)
-        totalUSD = totalUSD * (1 + kdvRate / 100)
+      // Apply total discount if specified
+      if (totalDiscount > 0) {
+        const discountMultiplier = 1 - (totalDiscount / 100)
+        totalTL = totalTL * discountMultiplier
+        totalUSD = totalUSD * discountMultiplier
       }
     } else {
       // Keep existing totals if no items provided
@@ -154,6 +158,7 @@ export async function PUT(
         exchangeRate,
         kdvEnabled,
         kdvRate,
+        totalDiscount,
         terms: body.terms,
         notes: body.notes
       },
@@ -183,6 +188,7 @@ export async function PUT(
           totalPrice: number;
           currency: string;
           discount?: number;
+          kdvRate?: number;
           productName: string;
           productType?: string;
         }) => ({
@@ -193,6 +199,7 @@ export async function PUT(
           totalPrice: item.totalPrice,
           currency: item.currency,
           discount: item.discount || 0,
+          kdvRate: item.kdvRate || 20,
           productName: item.productName
         }))
       })

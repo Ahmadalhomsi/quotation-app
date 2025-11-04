@@ -41,6 +41,7 @@ interface QuotationDetail {
   exchangeRate: number
   kdvEnabled: boolean
   kdvRate: number
+  totalDiscount: number
   validUntil: string
   createdAt: string
   updatedAt: string
@@ -53,12 +54,14 @@ interface QuotationDetail {
     totalPrice: number
     currency: Currency
     discount?: number
+    kdvRate: number
     product: {
       id: string
       name: string
       price: number
       currency: Currency
       description: string | null
+      kdvRate: number
     }
   }>
   terms: string | null
@@ -71,6 +74,7 @@ interface Product {
   description?: string
   price: number
   currency: Currency
+  kdvRate: number
 }
 
 interface Customer {
@@ -87,6 +91,7 @@ interface QuotationItem {
   unitPrice: number
   currency: Currency
   discount?: number
+  kdvRate: number
   product?: Product
   totalPrice: number
 }
@@ -142,13 +147,7 @@ export default function EditQuotationPage() {
     setCustomers(prev => [...prev, customer])
   }
 
-  const handleProductCreated = (product: {
-    id: string
-    name: string
-    description?: string
-    price: number
-    currency: Currency
-  }) => {
+  const handleProductCreated = (product: Product) => {
     setProducts(prev => [...prev, product])
   }
 
@@ -157,7 +156,8 @@ export default function EditQuotationPage() {
     items: QuotationItem[],
     kdvEnabled: boolean,
     kdvRate: number,
-    exchangeRate: number
+    exchangeRate: number,
+    totalDiscount: number
   ) => {
     setIsSaving(true)
 
@@ -167,6 +167,7 @@ export default function EditQuotationPage() {
         kdvEnabled,
         kdvRate,
         exchangeRate,
+        totalDiscount,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -174,6 +175,7 @@ export default function EditQuotationPage() {
           totalPrice: item.totalPrice,
           currency: item.currency,
           discount: item.discount || 0,
+          kdvRate: item.kdvRate || 20,
           productName: item.product?.name || '',
         }))
       }
@@ -268,12 +270,14 @@ export default function EditQuotationPage() {
     unitPrice: Number(item.unitPrice),
     currency: item.currency,
     discount: Number(item.discount) || 0,
+    kdvRate: Number(item.kdvRate) || 20,
     product: {
       id: item.product.id,
       name: item.product.name,
       description: item.product.description || undefined,
       price: Number(item.product.price),
       currency: item.product.currency,
+      kdvRate: Number(item.product.kdvRate) || 20,
     },
     totalPrice: Number(item.totalPrice)
   }))
@@ -316,6 +320,7 @@ export default function EditQuotationPage() {
           initialKdvEnabled={quotation.kdvEnabled}
           initialKdvRate={quotation.kdvRate}
           initialExchangeRate={quotation.exchangeRate}
+          initialTotalDiscount={quotation.totalDiscount || 0}
         />
       </div>
     </div>

@@ -34,6 +34,7 @@ interface Product {
   price: number
   currency: Currency
   description?: string
+  kdvRate: number
 }
 
 interface QuotationItem {
@@ -43,6 +44,7 @@ interface QuotationItem {
   unitPrice: number
   currency: Currency
   discount?: number
+  kdvRate: number
   product?: Product
   totalPrice: number
 }
@@ -106,7 +108,8 @@ export default function NewQuotationPage() {
     items: QuotationItem[],
     kdvEnabled: boolean,
     kdvRate: number,
-    exchangeRate: number
+    exchangeRate: number,
+    totalDiscount: number
   ) => {
     setIsLoading(true)
 
@@ -116,6 +119,7 @@ export default function NewQuotationPage() {
         kdvEnabled,
         kdvRate,
         exchangeRate,
+        totalDiscount,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -123,6 +127,7 @@ export default function NewQuotationPage() {
           totalPrice: item.totalPrice,
           currency: item.currency,
           discount: item.discount || 0,
+          kdvRate: item.kdvRate || 20,
           productName: item.product?.name || '',
         }))
       }

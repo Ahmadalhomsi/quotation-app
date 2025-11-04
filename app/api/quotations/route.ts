@@ -110,19 +110,26 @@ export async function POST(request: NextRequest) {
     const exchangeRate = body.exchangeRate || 40.0
     const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : true
     const kdvRate = body.kdvRate || 20
+    const totalDiscount = body.totalDiscount || 0
 
     for (const item of body.items) {
+      // Each item now has its own KDV rate
+      const itemKdvRate = item.kdvRate || 20
+      const itemTotal = item.totalPrice
+      const itemWithKdv = kdvEnabled ? itemTotal * (1 + itemKdvRate / 100) : itemTotal
+      
       if (item.currency === 'TL') {
-        totalTL += item.totalPrice
+        totalTL += itemWithKdv
       } else {
-        totalUSD += item.totalPrice
+        totalUSD += itemWithKdv
       }
     }
 
-    // Apply KDV if enabled
-    if (kdvEnabled) {
-      totalTL = totalTL * (1 + kdvRate / 100)
-      totalUSD = totalUSD * (1 + kdvRate / 100)
+    // Apply total discount if specified
+    if (totalDiscount > 0) {
+      const discountMultiplier = 1 - (totalDiscount / 100)
+      totalTL = totalTL * discountMultiplier
+      totalUSD = totalUSD * discountMultiplier
     }
 
     // Create quotation with items
@@ -139,6 +146,7 @@ export async function POST(request: NextRequest) {
         exchangeRate,
         kdvEnabled,
         kdvRate,
+        totalDiscount,
         terms: body.terms,
         notes: body.notes,
         items: {
@@ -149,6 +157,7 @@ export async function POST(request: NextRequest) {
             totalPrice: number;
             currency: string;
             discount?: number;
+            kdvRate?: number;
             productName: string;
           }) => ({
             productId: item.productId,
@@ -157,6 +166,7 @@ export async function POST(request: NextRequest) {
             totalPrice: item.totalPrice,
             currency: item.currency,
             discount: item.discount || 0,
+            kdvRate: item.kdvRate || 20,
             productName: item.productName
           }))
         }

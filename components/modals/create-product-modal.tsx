@@ -30,6 +30,7 @@ interface Product {
   currency: Currency
   sku?: string
   isActive?: boolean
+  kdvRate: number
 }
 
 interface CreateProductModalProps {
@@ -44,7 +45,8 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
     description: '',
     price: '',
     currency: Currency.TL,
-    sku: ''
+    sku: '',
+    kdvRate: '20'
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -80,6 +82,7 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
       if (formData.sku.trim()) {
         formDataToSend.append('sku', formData.sku.trim())
       }
+      formDataToSend.append('kdvRate', formData.kdvRate || '20')
       formDataToSend.append('isActive', 'true')
       
       const response = await fetch('/api/products', {
@@ -101,7 +104,8 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
         description: '',
         price: '',
         currency: Currency.TL,
-        sku: ''
+        sku: '',
+        kdvRate: '20'
       })
       setErrors({})
       setOpen(false)
@@ -221,19 +225,38 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="sku">Stok Kodu (SKU)</Label>
+              <Label htmlFor="kdvRate">KDV Oranı (%)</Label>
               <Input
-                id="sku"
-                value={formData.sku}
-                onChange={(e) => handleInputChange('sku', e.target.value)}
+                id="kdvRate"
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                value={formData.kdvRate}
+                onChange={(e) => handleInputChange('kdvRate', e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
                   }
                 }}
-                placeholder="Örn: PRD-001"
+                placeholder="20"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sku">Stok Kodu (SKU)</Label>
+            <Input
+              id="sku"
+              value={formData.sku}
+              onChange={(e) => handleInputChange('sku', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                }
+              }}
+              placeholder="Örn: PRD-001"
+            />
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">

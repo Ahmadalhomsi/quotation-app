@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
     Card,
@@ -73,6 +74,7 @@ interface Product {
     price: number
     currency: Currency
     description?: string
+    kdvRate: number
 }
 
 interface QuotationItem extends CreateQuotationItemData {
@@ -80,6 +82,7 @@ interface QuotationItem extends CreateQuotationItemData {
     product?: Product
     totalPrice: number
     discount?: number
+    kdvRate: number
 }
 
 interface QuotationFormProps {
@@ -89,7 +92,8 @@ interface QuotationFormProps {
     initialKdvEnabled?: boolean
     initialKdvRate?: number
     initialExchangeRate?: number
-    onSubmit: (data: CreateQuotationData, items: QuotationItem[], kdvEnabled: boolean, kdvRate: number, exchangeRate: number) => Promise<void>
+    initialTotalDiscount?: number
+    onSubmit: (data: CreateQuotationData, items: QuotationItem[], kdvEnabled: boolean, kdvRate: number, exchangeRate: number, totalDiscount: number) => Promise<void>
     customers: Customer[]
     products: Product[]
     onCustomerCreated: (customer: Customer) => void
@@ -203,6 +207,11 @@ function SortableTableRow({
                     />
                 </div>
             </TableCell>
+            <TableCell className="text-center">
+                <Badge variant="outline">
+                    %{Number(item.kdvRate || 20).toFixed(0)}
+                </Badge>
+            </TableCell>
             <TableCell className="text-right">
                 {item.currency === Currency.TL ? '₺' : '$'}{item.totalPrice.toFixed(2)}
             </TableCell>
@@ -228,6 +237,7 @@ export function QuotationForm({
     initialKdvEnabled = true,
     initialKdvRate = 20,
     initialExchangeRate = 30,
+    initialTotalDiscount = 0,
     onSubmit,
     customers,
     products,
@@ -250,6 +260,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const [exchangeRate, setExchangeRate] = useState<number>(initialExchangeRate)
     const [kdvEnabled, setKdvEnabled] = useState<boolean>(initialKdvEnabled)
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
+    const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
 
     const [formData, setFormData] = useState<CreateQuotationData>({
         title: initialData.title || 'Teklif',
@@ -394,6 +405,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                     unitPrice: selectedUnitPrice,
                     currency: selectedCurrency,
                     discount: newItem.discount || 0,
+                    kdvRate: product.kdvRate || 20,
                     totalPrice,
                     product
                 }
@@ -431,6 +443,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             unitPrice: newItem.unitPrice || 0,
             currency: newItem.currency || Currency.TL,
             discount: newItem.discount || 0,
+            kdvRate: product.kdvRate || 20,
             totalPrice,
             product
         }
@@ -487,25 +500,37 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     }
 
     const calculateTotals = () => {
-        const kdvMultiplier = kdvEnabled ? (1 + kdvRate / 100) : 1
-
+        // Calculate subtotals and KDV per item
         const totals = items.reduce((acc, item) => {
             const itemTotal = item.totalPrice
+            const itemKdvRate = item.kdvRate || 20
+            const itemKdvAmount = kdvEnabled ? itemTotal * (itemKdvRate / 100) : 0
+            const itemWithKdv = itemTotal + itemKdvAmount
+            
             if (item.currency === Currency.TL) {
-                acc.totalTL += itemTotal
+                acc.subtotalTL += itemTotal
+                acc.kdvAmountTL += itemKdvAmount
+                acc.totalTL += itemWithKdv
             } else {
-                acc.totalUSD += itemTotal
+                acc.subtotalUSD += itemTotal
+                acc.kdvAmountUSD += itemKdvAmount
+                acc.totalUSD += itemWithKdv
             }
             return acc
-        }, { totalTL: 0, totalUSD: 0 })
+        }, { totalTL: 0, totalUSD: 0, subtotalTL: 0, subtotalUSD: 0, kdvAmountTL: 0, kdvAmountUSD: 0 })
 
+        // Apply total discount
+        const discountMultiplier = 1 - (totalDiscount / 100)
+        
         return {
-            totalTL: totals.totalTL * kdvMultiplier,
-            totalUSD: totals.totalUSD * kdvMultiplier,
-            subtotalTL: totals.totalTL,
-            subtotalUSD: totals.totalUSD,
-            kdvAmountTL: totals.totalTL * (kdvRate / 100),
-            kdvAmountUSD: totals.totalUSD * (kdvRate / 100)
+            totalTL: totals.totalTL * discountMultiplier,
+            totalUSD: totals.totalUSD * discountMultiplier,
+            subtotalTL: totals.subtotalTL,
+            subtotalUSD: totals.subtotalUSD,
+            kdvAmountTL: totals.kdvAmountTL * discountMultiplier,
+            kdvAmountUSD: totals.kdvAmountUSD * discountMultiplier,
+            discountAmountTL: totals.totalTL * (totalDiscount / 100),
+            discountAmountUSD: totals.totalUSD * (totalDiscount / 100)
         }
     }
 
@@ -535,7 +560,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             return
         }
 
-        await onSubmit(formData, items, kdvEnabled, kdvRate, exchangeRate)
+        await onSubmit(formData, items, kdvEnabled, kdvRate, exchangeRate, totalDiscount)
     }
 
     const totals = calculateTotals()
@@ -660,7 +685,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="kdvRate">KDV Oranı (%)</Label>
+                            <Label htmlFor="kdvRate">Genel KDV Oranı (%)</Label>
                             <Input
                                 id="kdvRate"
                                 type="number"
@@ -672,6 +697,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                                 disabled={!kdvEnabled}
                             />
+                            <p className="text-xs text-muted-foreground">Her ürün kendi KDV oranına sahiptir</p>
                         </div>
 
                         <div className="space-y-2">
@@ -686,6 +712,24 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                             />
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="totalDiscount">Toplam İskonto (%)</Label>
+                        <Input
+                            id="totalDiscount"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            value={totalDiscount}
+                            onChange={(e) => setTotalDiscount(Number(e.target.value))}
+                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                            placeholder="0"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Tüm teklif toplamı üzerinden uygulanacak iskonto oranı
+                        </p>
                     </div>
                 </CardContent>
             </Card>
@@ -831,6 +875,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <TableHead className="text-center">Miktar</TableHead>
                                         <TableHead className="text-right">Birim Fiyat</TableHead>
                                         <TableHead className="text-center">İskonto (%)</TableHead>
+                                        <TableHead className="text-center">KDV (%)</TableHead>
                                         <TableHead className="text-right">Toplam</TableHead>
                                         <TableHead className="text-center">İşlem</TableHead>
                                     </TableRow>

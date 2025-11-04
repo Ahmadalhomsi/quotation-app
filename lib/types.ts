@@ -91,6 +91,7 @@ export interface Product {
   sku?: string          // Stok Kodu
   photoUrl?: string     // Ürün Fotoğrafı URL'i
   isActive: boolean     // Aktif mi
+  kdvRate: number       // KDV oranı (%)
   createdAt: Date
   updatedAt: Date
 }
@@ -104,6 +105,7 @@ export interface CreateProductData {
   sku?: string
   photoUrl?: string
   isActive?: boolean
+  kdvRate?: number       // KDV oranı (%)
 }
 
 // Teklif kalemi tipleri
@@ -114,6 +116,7 @@ export interface QuotationItem {
   totalPrice: number    // Toplam Fiyat
   currency: Currency    // Para Birimi
   discount?: number     // İskonto oranı (%)
+  kdvRate: number       // KDV oranı (%)
   quotationId: string
   productId: string
   product: Product
@@ -128,6 +131,7 @@ export interface CreateQuotationItemData {
   unitPrice: number
   currency: Currency
   discount?: number      // İskonto oranı (%)
+  kdvRate?: number       // KDV oranı (%)
 }
 
 // Teklif tipleri
@@ -146,6 +150,7 @@ export interface Quotation {
   exchangeRate?: number   // Döviz Kuru
   kdvEnabled?: boolean    // KDV dahil mi?
   kdvRate?: number       // KDV oranı (%)
+  totalDiscount?: number  // Toplam iskonto oranı (%)
   terms?: string          // Şartlar ve Koşullar
   notes?: string          // Notlar
   createdAt: Date
@@ -162,6 +167,7 @@ export interface CreateQuotationData {
   notes?: string
   kdvEnabled?: boolean    // KDV dahil mi?
   kdvRate?: number       // KDV oranı (%)
+  totalDiscount?: number  // Toplam iskonto oranı (%)
 }
 
 // Döviz kuru tipi
