@@ -39,7 +39,8 @@ export default function NewProductPage() {
     purchasePrice: 0,
     currency: Currency.TL,
     sku: '',
-    isActive: true
+    isActive: true,
+    kdvRate: 20
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -133,6 +134,7 @@ export default function NewProductPage() {
       submitData.append('currency', formData.currency)
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
+      submitData.append('kdvRate', (formData.kdvRate ?? 20).toString())
       
       if (selectedFile) {
         submitData.append('photo', selectedFile)
@@ -323,6 +325,27 @@ export default function NewProductPage() {
                       Kâr marjı hesaplaması için kullanılır
                     </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kdvRate">KDV Oranı (%) *</Label>
+                  <Input
+                    id="kdvRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.kdvRate || 20}
+                    onChange={(e) => handleInputChange('kdvRate', parseFloat(e.target.value) || 20)}
+                    placeholder="20.00"
+                    className={errors.kdvRate ? 'border-red-500' : ''}
+                  />
+                  {errors.kdvRate && (
+                    <p className="text-sm text-red-500">{errors.kdvRate}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Bu ürün için uygulanacak KDV oranı
+                  </p>
                 </div>
               </CardContent>
             </Card>

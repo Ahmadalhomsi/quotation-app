@@ -125,6 +125,7 @@ model Product {
   sku         String?     @unique // Stok kodu
   photoUrl    String?     @map("photo_url") // Ürün fotoğrafı URL'i (MinIO)
   isActive    Boolean     @default(true) @map("is_active") // Aktif mi
+  kdvRate     Decimal     @default(20) @db.Decimal(5, 2) @map("kdv_rate") // KDV oranı (%)
   
   quotationItems QuotationItem[]
   
@@ -157,6 +158,9 @@ model Quotation {
   kdvEnabled      Boolean?        @default(true) @map("kdv_enabled") // KDV dahil mi?
   kdvRate         Decimal?        @default(20) @db.Decimal(5, 2) @map("kdv_rate") // KDV oranı (%)
   
+  // İskonto bilgileri
+  totalDiscount   Decimal?        @default(0) @db.Decimal(5, 2) @map("total_discount") // Toplam iskonto oranı (%)
+  
   // Notlar
   terms           String?         // Şartlar ve koşullar
   notes           String?         // Notlar
@@ -178,6 +182,7 @@ model QuotationItem {
   totalPrice  Decimal   @db.Decimal(10, 2) @map("total_price") // Toplam fiyat
   currency    Currency  // Para birimi
   discount    Decimal?  @default(0) @db.Decimal(5, 2) @map("discount") // İskonto oranı (%)
+  kdvRate     Decimal   @default(20) @db.Decimal(5, 2) @map("kdv_rate") // KDV oranı (%)
   
   quotationId String    @map("quotation_id")
   quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)

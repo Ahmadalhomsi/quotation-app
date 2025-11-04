@@ -51,6 +51,7 @@ interface Product {
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
+  kdvRate: number
   createdAt: string
   updatedAt: string
 }
@@ -283,6 +284,7 @@ export default function ProductsPage() {
                     <TableHead className="w-[300px]">Ürün Bilgileri</TableHead>
                     <TableHead className="w-[120px]">Satış Fiyatı</TableHead>
                     <TableHead className="w-[120px]">Alış Fiyatı</TableHead>
+                    <TableHead className="w-[80px]">KDV (%)</TableHead>
                     <TableHead className="w-[100px]">SKU</TableHead>
                     <TableHead className="w-[80px]">Durum</TableHead>
                     <TableHead className="w-[100px]">Kayıt Tarihi</TableHead>
@@ -328,6 +330,11 @@ export default function ProductsPage() {
                         ? formatPrice(Number(product.purchasePrice), product.currency)
                         : 'Belirtilmemiş'
                       }
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">
+                        %{Number(product.kdvRate || 20).toFixed(0)}
+                      </Badge>
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       <div className="truncate max-w-[100px]" title={product.sku || 'Yok'}>

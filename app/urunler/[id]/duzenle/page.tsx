@@ -44,6 +44,7 @@ interface Product {
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
+  kdvRate: number
 }
 
 interface UpdateProductData {
@@ -54,6 +55,7 @@ interface UpdateProductData {
   currency: Currency
   sku: string
   isActive: boolean
+  kdvRate: number
 }
 
 export default function EditProductPage() {
@@ -74,7 +76,8 @@ export default function EditProductPage() {
     purchasePrice: 0,
     currency: Currency.TL,
     sku: '',
-    isActive: true
+    isActive: true,
+    kdvRate: 20
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -100,7 +103,8 @@ export default function EditProductPage() {
           purchasePrice: product.purchasePrice ? Number(product.purchasePrice) : undefined,
           currency: product.currency || Currency.TL,
           sku: product.sku || '',
-          isActive: product.isActive ?? true
+          isActive: product.isActive ?? true,
+          kdvRate: Number(product.kdvRate) || 20
         })
         
         if (product.photoUrl) {
@@ -217,6 +221,7 @@ export default function EditProductPage() {
       submitData.append('currency', formData.currency)
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
+      submitData.append('kdvRate', (formData.kdvRate ?? 20).toString())
       
       if (selectedFile) {
         submitData.append('photo', selectedFile)
@@ -432,6 +437,27 @@ export default function EditProductPage() {
                       Bu fiyat sadece maliyet hesapları için kullanılır
                     </p>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="kdvRate">KDV Oranı (%) *</Label>
+                  <Input
+                    id="kdvRate"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.kdvRate || 20}
+                    onChange={(e) => handleInputChange('kdvRate', parseFloat(e.target.value) || 20)}
+                    placeholder="20.00"
+                    className={errors.kdvRate ? 'border-red-500' : ''}
+                  />
+                  {errors.kdvRate && (
+                    <p className="text-sm text-red-600">{errors.kdvRate}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Bu ürün için uygulanacak KDV oranı
+                  </p>
                 </div>
 
                 {formData.purchasePrice && formData.purchasePrice > 0 && (
