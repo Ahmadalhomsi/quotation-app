@@ -56,7 +56,7 @@ export function MainNav() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex h-16 items-center">
+      <div className="px-4 sm:px-6 lg:px-8 flex h-16 items-center">
         <div className="mr-4 hidden md:flex">
           <Link className="mr-6 flex items-center space-x-2" href="/">
             <Image 
@@ -192,7 +192,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <MainNav />
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+      <main className="px-4 sm:px-6 lg:px-8 py-6">
         {children}
       </main>
     </div>
