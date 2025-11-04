@@ -416,6 +416,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
           <Text style={[styles.tableHeaderText, styles.quantity]}>MİKTAR</Text>
           <Text style={[styles.tableHeaderText, styles.unitPrice]}>BİRİM FİYAT</Text>
           <Text style={[styles.tableHeaderText, styles.unitPrice]}>İSKONTO</Text>
+          <Text style={[styles.tableHeaderText, styles.quantity]}>KDV</Text>
           <Text style={[styles.tableHeaderText, styles.total]}>TOPLAM</Text>
         </View>
 
@@ -455,6 +456,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             </Text>
             <Text style={[styles.tableCell, styles.unitPrice]}>
               {item.discount ? `%${item.discount}` : '-'}
+            </Text>
+            <Text style={[styles.tableCell, styles.quantity]}>
+              %{item.kdvRate || 20}
             </Text>
             <Text style={[styles.tableCellBold, styles.total]}>
               {item.currency === 'TL' 
