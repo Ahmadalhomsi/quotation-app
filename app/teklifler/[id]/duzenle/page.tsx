@@ -42,6 +42,7 @@ interface QuotationDetail {
   kdvEnabled: boolean
   kdvRate: number
   totalDiscount: number
+  showProductKdv: boolean
   validUntil: string
   createdAt: string
   updatedAt: string
@@ -157,7 +158,8 @@ export default function EditQuotationPage() {
     kdvEnabled: boolean,
     kdvRate: number,
     exchangeRate: number,
-    totalDiscount: number
+    totalDiscount: number,
+    showProductKdv: boolean
   ) => {
     setIsSaving(true)
 
@@ -168,6 +170,7 @@ export default function EditQuotationPage() {
         kdvRate,
         exchangeRate,
         totalDiscount,
+        showProductKdv,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -321,6 +324,7 @@ export default function EditQuotationPage() {
           initialKdvRate={quotation.kdvRate}
           initialExchangeRate={quotation.exchangeRate}
           initialTotalDiscount={quotation.totalDiscount || 0}
+          initialShowProductKdv={quotation.showProductKdv ?? true}
         />
       </div>
     </div>

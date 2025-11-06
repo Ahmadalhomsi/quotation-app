@@ -109,7 +109,8 @@ export default function NewQuotationPage() {
     kdvEnabled: boolean,
     kdvRate: number,
     exchangeRate: number,
-    totalDiscount: number
+    totalDiscount: number,
+    showProductKdv: boolean
   ) => {
     setIsLoading(true)
 
@@ -120,6 +121,7 @@ export default function NewQuotationPage() {
         kdvRate,
         exchangeRate,
         totalDiscount,
+        showProductKdv,
         items: items.map(item => ({
           productId: item.productId,
           quantity: item.quantity,

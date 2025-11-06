@@ -99,6 +99,7 @@ interface QuotationDetail {
     totalPrice: number
     currency: string
     discount?: number
+    kdvRate: number
     product: {
       id: string
       name: string
@@ -106,10 +107,14 @@ interface QuotationDetail {
       currency: string
       description: string | null
       photoUrl?: string | null
+      kdvRate: number
     }
   }>
   terms: string | null
   notes: string | null
+  kdvEnabled: boolean
+  kdvRate: number
+  showProductKdv: boolean
 }
 
 export default function QuotationDetailPage() {
@@ -211,11 +216,13 @@ export default function QuotationDetailPage() {
           totalPrice: item.totalPrice,
           currency: item.currency as Currency,
           discount: item.discount || 0,
+          kdvRate: item.kdvRate || 20,
           product: {
             ...item.product,
             description: item.product.description || undefined,
             photoUrl: item.product.photoUrl || undefined,
             currency: item.product.currency as Currency,
+            kdvRate: item.product.kdvRate || 20,
             createdAt: new Date(),
             updatedAt: new Date(),
             isActive: true
@@ -483,10 +490,10 @@ export default function QuotationDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Ürün</TableHead>
-                    <TableHead>Miktar</TableHead>
-                    <TableHead>Birim Fiyat</TableHead>
-                    <TableHead>İskonto</TableHead>
-                    <TableHead>P.B.</TableHead>
+                    <TableHead className="text-center">Miktar</TableHead>
+                    <TableHead className="text-right">Birim Fiyat</TableHead>
+                    <TableHead className="text-center">İskonto</TableHead>
+                    {quotation.showProductKdv && <TableHead className="text-center">KDV (%)</TableHead>}
                     <TableHead className="text-right">Toplam</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -516,18 +523,20 @@ export default function QuotationDetailPage() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell className="font-mono">
+                      <TableCell className="text-center">{item.quantity}</TableCell>
+                      <TableCell className="text-right font-mono">
                         {formatPrice(item.unitPrice, item.currency as 'TL' | 'USD')}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {item.discount && item.discount > 0 ? `%${item.discount}` : '-'}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {item.currency}
-                        </Badge>
-                      </TableCell>
+                      {quotation.showProductKdv && (
+                        <TableCell className="text-center">
+                          <Badge variant="outline">
+                            %{Number(item.kdvRate || 20).toFixed(0)}
+                          </Badge>
+                        </TableCell>
+                      )}
                       <TableCell className="text-right font-mono font-medium">
                         {formatPrice(item.totalPrice, item.currency as 'TL' | 'USD')}
                       </TableCell>

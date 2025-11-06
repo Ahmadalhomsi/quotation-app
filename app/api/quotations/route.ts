@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
     const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : true
     const kdvRate = body.kdvRate || 20
     const totalDiscount = body.totalDiscount || 0
+    const showProductKdv = body.showProductKdv !== undefined ? body.showProductKdv : true
 
     for (const item of body.items) {
       // Each item now has its own KDV rate
@@ -147,6 +148,7 @@ export async function POST(request: NextRequest) {
         kdvEnabled,
         kdvRate,
         totalDiscount,
+        showProductKdv,
         terms: body.terms,
         notes: body.notes,
         items: {

@@ -93,7 +93,8 @@ interface QuotationFormProps {
     initialKdvRate?: number
     initialExchangeRate?: number
     initialTotalDiscount?: number
-    onSubmit: (data: CreateQuotationData, items: QuotationItem[], kdvEnabled: boolean, kdvRate: number, exchangeRate: number, totalDiscount: number) => Promise<void>
+    initialShowProductKdv?: boolean
+    onSubmit: (data: CreateQuotationData, items: QuotationItem[], kdvEnabled: boolean, kdvRate: number, exchangeRate: number, totalDiscount: number, showProductKdv: boolean) => Promise<void>
     customers: Customer[]
     products: Product[]
     onCustomerCreated: (customer: Customer) => void
@@ -108,7 +109,8 @@ function SortableTableRow({
     updateItemQuantity, 
     updateItemUnitPrice, 
     updateItemDiscount, 
-    removeItem 
+    removeItem,
+    showProductKdv 
 }: {
     item: QuotationItem
     index: number
@@ -116,6 +118,7 @@ function SortableTableRow({
     updateItemUnitPrice: (index: number, unitPrice: number) => void
     updateItemDiscount: (index: number, discount: number) => void
     removeItem: (index: number) => void
+    showProductKdv: boolean
 }) {
     const {
         attributes,
@@ -207,11 +210,13 @@ function SortableTableRow({
                     />
                 </div>
             </TableCell>
-            <TableCell className="text-center">
-                <Badge variant="outline">
-                    %{Number(item.kdvRate || 20).toFixed(0)}
-                </Badge>
-            </TableCell>
+            {showProductKdv && (
+                <TableCell className="text-center">
+                    <Badge variant="outline">
+                        %{Number(item.kdvRate || 20).toFixed(0)}
+                    </Badge>
+                </TableCell>
+            )}
             <TableCell className="text-right">
                 {item.currency === Currency.TL ? '₺' : '$'}{item.totalPrice.toFixed(2)}
             </TableCell>
@@ -238,6 +243,7 @@ export function QuotationForm({
     initialKdvRate = 20,
     initialExchangeRate = 30,
     initialTotalDiscount = 0,
+    initialShowProductKdv = true,
     onSubmit,
     customers,
     products,
@@ -261,6 +267,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const [kdvEnabled, setKdvEnabled] = useState<boolean>(initialKdvEnabled)
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
     const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
+    const [showProductKdv, setShowProductKdv] = useState<boolean>(initialShowProductKdv)
 
     const [formData, setFormData] = useState<CreateQuotationData>({
         title: initialData.title || 'Teklif',
@@ -560,7 +567,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             return
         }
 
-        await onSubmit(formData, items, kdvEnabled, kdvRate, exchangeRate, totalDiscount)
+        await onSubmit(formData, items, kdvEnabled, kdvRate, exchangeRate, totalDiscount, showProductKdv)
     }
 
     const totals = calculateTotals()
@@ -684,6 +691,17 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             <Label htmlFor="kdvEnabled">KDV Dahil</Label>
                         </div>
 
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="showProductKdv"
+                                checked={showProductKdv}
+                                onChange={(e) => setShowProductKdv(e.target.checked)}
+                                className="rounded border-gray-300"
+                            />
+                            <Label htmlFor="showProductKdv">Ürün KDV Oranlarını Göster</Label>
+                        </div>
+
                         <div className="space-y-2">
                             <Label htmlFor="kdvRate">Genel KDV Oranı (%)</Label>
                             <Input
@@ -699,7 +717,9 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             />
                             <p className="text-xs text-muted-foreground">Her ürün kendi KDV oranına sahiptir</p>
                         </div>
+                    </div>
 
+                    <div className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor="exchangeRate">Döviz Kuru (USD/TL)</Label>
                             <Input
@@ -712,24 +732,24 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
                             />
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="totalDiscount">Toplam İskonto (%)</Label>
-                        <Input
-                            id="totalDiscount"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            value={totalDiscount}
-                            onChange={(e) => setTotalDiscount(Number(e.target.value))}
-                            onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-                            placeholder="0"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Tüm teklif toplamı üzerinden uygulanacak iskonto oranı
-                        </p>
+                        <div className="space-y-2">
+                            <Label htmlFor="totalDiscount">Toplam İskonto (%)</Label>
+                            <Input
+                                id="totalDiscount"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                value={totalDiscount}
+                                onChange={(e) => setTotalDiscount(Number(e.target.value))}
+                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                                placeholder="0"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Tüm teklif toplamı üzerinden uygulanacak iskonto oranı
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -875,7 +895,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <TableHead className="text-center">Miktar</TableHead>
                                         <TableHead className="text-right">Birim Fiyat</TableHead>
                                         <TableHead className="text-center">İskonto (%)</TableHead>
-                                        <TableHead className="text-center">KDV (%)</TableHead>
+                                        {showProductKdv && <TableHead className="text-center">KDV (%)</TableHead>}
                                         <TableHead className="text-right">Toplam</TableHead>
                                         <TableHead className="text-center">İşlem</TableHead>
                                     </TableRow>
@@ -891,6 +911,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                                 updateItemUnitPrice={updateItemUnitPrice}
                                                 updateItemDiscount={updateItemDiscount}
                                                 removeItem={removeItem}
+                                                showProductKdv={showProductKdv}
                                             />
                                         ))}
                                     </SortableContext>

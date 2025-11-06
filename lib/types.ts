@@ -150,6 +150,7 @@ export interface Quotation {
   exchangeRate?: number   // Döviz Kuru
   kdvEnabled?: boolean    // KDV dahil mi?
   kdvRate?: number       // KDV oranı (%)
+  showProductKdv?: boolean // Ürün bazlı KDV oranlarını göster mi?
   totalDiscount?: number  // Toplam iskonto oranı (%)
   terms?: string          // Şartlar ve Koşullar
   notes?: string          // Notlar
@@ -167,6 +168,7 @@ export interface CreateQuotationData {
   notes?: string
   kdvEnabled?: boolean    // KDV dahil mi?
   kdvRate?: number       // KDV oranı (%)
+  showProductKdv?: boolean // Ürün bazlı KDV oranlarını göster mi?
   totalDiscount?: number  // Toplam iskonto oranı (%)
 }
 

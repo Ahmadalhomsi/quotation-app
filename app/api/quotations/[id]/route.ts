@@ -117,6 +117,7 @@ export async function PUT(
     const kdvEnabled = body.kdvEnabled !== undefined ? body.kdvEnabled : existingQuotation.kdvEnabled
     const kdvRate = body.kdvRate !== undefined ? body.kdvRate : existingQuotation.kdvRate
     const totalDiscount = body.totalDiscount !== undefined ? body.totalDiscount : (existingQuotation.totalDiscount ? Number(existingQuotation.totalDiscount) : 0)
+    const showProductKdv = body.showProductKdv !== undefined ? body.showProductKdv : (existingQuotation.showProductKdv ?? true)
 
     if (body.items && body.items.length > 0) {
       // Sum up item totals with individual KDV rates
@@ -159,6 +160,7 @@ export async function PUT(
         kdvEnabled,
         kdvRate,
         totalDiscount,
+        showProductKdv,
         terms: body.terms,
         notes: body.notes
       },

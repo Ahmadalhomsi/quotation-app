@@ -157,6 +157,7 @@ model Quotation {
   // KDV bilgileri
   kdvEnabled      Boolean?        @default(true) @map("kdv_enabled") // KDV dahil mi?
   kdvRate         Decimal?        @default(20) @db.Decimal(5, 2) @map("kdv_rate") // KDV oranı (%)
+  showProductKdv  Boolean?        @default(true) @map("show_product_kdv") // Ürün bazlı KDV oranlarını göster mi?
   
   // İskonto bilgileri
   totalDiscount   Decimal?        @default(0) @db.Decimal(5, 2) @map("total_discount") // Toplam iskonto oranı (%)
