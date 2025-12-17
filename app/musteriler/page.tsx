@@ -90,7 +90,7 @@ export default function CustomersPage() {
         customer.companyName.toLowerCase().includes(searchLower) ||
         customer.contactName.toLowerCase().includes(searchLower) ||
         customer.email?.toLowerCase().includes(searchLower) ||
-        customer.phone.includes(searchTerm) ||
+        (customer.phone || '').includes(searchTerm) ||
         customer.taxNumber?.includes(searchTerm)
       )
     })
