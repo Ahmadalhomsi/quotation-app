@@ -285,6 +285,15 @@ export default function EditQuotationPage() {
     totalPrice: Number(item.totalPrice)
   }))
 
+  const normalizeNumber = (value: unknown, fallback: number) => {
+    const numeric = Number(value)
+    return Number.isFinite(numeric) ? numeric : fallback
+  }
+
+  const normalizedKdvRate = normalizeNumber(quotation.kdvRate, 20)
+  const normalizedExchangeRate = normalizeNumber(quotation.exchangeRate, 30)
+  const normalizedTotalDiscount = normalizeNumber(quotation.totalDiscount, 0)
+
   return (
     <div className="container mx-auto py-8">
       <div className="space-y-6">
@@ -320,10 +329,10 @@ export default function EditQuotationPage() {
           isLoading={isSaving}
           initialData={initialData}
           initialItems={initialItems}
-          initialKdvEnabled={quotation.kdvEnabled}
-          initialKdvRate={quotation.kdvRate}
-          initialExchangeRate={quotation.exchangeRate}
-          initialTotalDiscount={quotation.totalDiscount || 0}
+          initialKdvEnabled={quotation.kdvEnabled ?? true}
+          initialKdvRate={normalizedKdvRate}
+          initialExchangeRate={normalizedExchangeRate}
+          initialTotalDiscount={normalizedTotalDiscount}
           initialShowProductKdv={quotation.showProductKdv ?? true}
         />
       </div>

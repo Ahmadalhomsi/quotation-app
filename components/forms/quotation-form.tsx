@@ -263,7 +263,12 @@ Kalan %50'lik bakiye, iş tesliminde nakit veya kredi/banka kartı ile ödenir.
 Teslim edilen ürünlerin garantisi, teslim tarihinden itibaren 2 yıl geçerlidir.
 Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışındadır.`
 
-    const [exchangeRate, setExchangeRate] = useState<number>(initialExchangeRate)
+    const normalizeExchangeRate = (value: number | string | null | undefined) => {
+        const numeric = Number(value)
+        return Number.isFinite(numeric) ? numeric : 30
+    }
+
+    const [exchangeRate, setExchangeRate] = useState<number>(() => normalizeExchangeRate(initialExchangeRate))
     const [kdvEnabled, setKdvEnabled] = useState<boolean>(initialKdvEnabled)
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
     const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
@@ -327,6 +332,11 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             fetchExchangeRate()
         }
     }, [mode])
+
+    useEffect(() => {
+        // Ensure prop changes (or string values) are normalized into a number
+        setExchangeRate(normalizeExchangeRate(initialExchangeRate))
+    }, [initialExchangeRate])
 
     // Enhanced callback handlers that auto-select newly created items
     const handleCustomerCreated = (customer: Customer) => {
