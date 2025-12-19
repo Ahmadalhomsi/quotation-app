@@ -29,6 +29,9 @@ COPY . .
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# 1. Install pnpm manually (Fixes the Corepack signature error)
+RUN npm install -g pnpm@latest
+
 # Generate Prisma Client
 RUN pnpm prisma generate
 
