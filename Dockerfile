@@ -1,13 +1,12 @@
 # Use a newer Node.js version to satisfy pdfjs-dist requirements (>=20.16.0)
 FROM node:20.18-alpine AS base
 
-# Install pnpm globally
+# Set pnpm home and path
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 
-# 1. Install pnpm manually via npm (More stable than Corepack)
-RUN npm install -g pnpm@9.15.4
+# Install pnpm manually and FORCE it to overwrite the corepack symlinks
+RUN npm install -g pnpm@9.15.4 --force
 
 # --- Dependencies stage ---
 FROM base AS deps
@@ -17,8 +16,7 @@ WORKDIR /app
 # Copy lockfile and manifest
 COPY package.json pnpm-lock.yaml* ./
 
-# 2. Install dependencies
-# We use --frozen-lockfile to ensure your local lockfile is respected
+# Install dependencies
 RUN pnpm i --frozen-lockfile
 
 # 2. Rebuild the source code only when needed
