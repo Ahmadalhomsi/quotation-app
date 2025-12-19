@@ -36,7 +36,7 @@ RUN pnpm prisma generate
 # Build the application
 RUN pnpm run build
 
-# 3. Production image, copy all the files and run next
+# 3. Production image
 FROM base AS runner
 WORKDIR /app
 
@@ -45,23 +45,21 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apk add --no-cache curl
 
-# Create a non-root user
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
-# Copy standalone build files
+# Copy standalone build files (this includes most necessary node_modules)
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 
-# Handle Prisma engine files for standalone mode
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# Change ownership to the non-root user
+RUN chown -R nextjs:nodejs /app
 
-RUN mkdir -p .next && chown nextjs:nodejs .next
 USER nextjs
 
+# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
