@@ -6,17 +6,19 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-# 1. Install dependencies only when needed
+# 1. Install pnpm manually via npm (More stable than Corepack)
+RUN npm install -g pnpm@9.15.4
+
+# --- Dependencies stage ---
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy only lockfile and manifest
-# Note: pnpm-lock.yaml is used instead of package-lock.json
+# Copy lockfile and manifest
 COPY package.json pnpm-lock.yaml* ./
 
-# Install dependencies using pnpm
-# --frozen-lockfile is the pnpm equivalent of npm ci
+# 2. Install dependencies
+# We use --frozen-lockfile to ensure your local lockfile is respected
 RUN pnpm i --frozen-lockfile
 
 # 2. Rebuild the source code only when needed
@@ -29,8 +31,6 @@ COPY . .
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# 1. Install pnpm manually (Fixes the Corepack signature error)
-RUN npm install -g pnpm@latest
 
 # Generate Prisma Client
 RUN pnpm prisma generate
