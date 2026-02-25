@@ -519,8 +519,8 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const calculateTotals = () => {
         // Calculate subtotals and KDV per item
         const totals = items.reduce((acc, item) => {
-            const itemTotal = item.totalPrice
-            const itemKdvRate = item.kdvRate || 20
+            const itemTotal = typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : Number(item.totalPrice)
+            const itemKdvRate = typeof item.kdvRate === 'string' ? parseFloat(item.kdvRate) : Number(item.kdvRate || 20)
             const itemKdvAmount = kdvEnabled ? itemTotal * (itemKdvRate / 100) : 0
             const itemWithKdv = itemTotal + itemKdvAmount
             

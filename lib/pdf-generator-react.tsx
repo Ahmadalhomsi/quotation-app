@@ -1,6 +1,6 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet, pdf, Font, Image } from '@react-pdf/renderer'
-import { PdfExportData } from './types'
+import { PdfExportData, QuotationItem, Currency } from './types'
 
 // Register fonts
 Font.register({
@@ -288,21 +288,20 @@ interface QuotationPDFProps {
 }
 
 // Helper to calculate totals and KDV breakdown
-const calculateBreakdowns = (items: any[], kdvEnabled: boolean) => {
+const calculateBreakdowns = (items: QuotationItem[], kdvEnabled?: boolean) => {
   const breakdownTL: Record<number, number> = {}
   const breakdownUSD: Record<number, number> = {}
   let subtotalTL = 0
   let subtotalUSD = 0
 
   items.forEach(item => {
-    // Calculate total price for this item (including discount)
-    // item.totalPrice is already calculated as: quantity * unitPrice * (1 - discount/100)
-    // This is the pre-tax amount
-    const amount = item.totalPrice
-    const rate = item.kdvRate || 20
+    // Ensure numeric values
+    const amount = Number(item.totalPrice)
+    const rate = Number(item.kdvRate || 20)
+    
     const kdv = kdvEnabled ? amount * (rate / 100) : 0
     
-    if (item.currency === 'TL') {
+    if (item.currency === Currency.TL) {
       subtotalTL += amount
       breakdownTL[rate] = (breakdownTL[rate] || 0) + kdv
     } else {

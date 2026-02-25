@@ -258,8 +258,8 @@ export default function QuotationDetailPage() {
     let subtotalUSD = 0
 
     quotation.items.forEach(item => {
-      const amount = item.totalPrice
-      const rate = item.kdvRate || 20
+      const amount = typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : Number(item.totalPrice)
+      const rate = typeof item.kdvRate === 'string' ? parseFloat(item.kdvRate) : Number(item.kdvRate || 20)
       const kdv = quotation.kdvEnabled ? amount * (rate / 100) : 0
       
       if (item.currency === 'TL') {
