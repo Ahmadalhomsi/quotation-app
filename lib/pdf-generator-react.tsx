@@ -549,20 +549,20 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
               </>
             )}
             
-            {quotation.totalTL > 0 && (
+            {(quotation.totalTL || 0) > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
                 </Text>
-                <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} TL</Text>
+                <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL || 0)} TL</Text>
               </View>
             )}
-            {quotation.totalUSD > 0 && (
+            {(quotation.totalUSD || 0) > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
                 </Text>
-                <Text style={styles.totalsValue}>${formatPrice(quotation.totalUSD)}</Text>
+                <Text style={styles.totalsValue}>${formatPrice(quotation.totalUSD || 0)}</Text>
               </View>
             )}
             
