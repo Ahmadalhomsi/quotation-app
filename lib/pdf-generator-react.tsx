@@ -287,8 +287,40 @@ interface QuotationPDFProps {
   data: PdfExportData
 }
 
+// Helper to calculate totals and KDV breakdown
+const calculateBreakdowns = (items: any[], kdvEnabled: boolean) => {
+  const breakdownTL: Record<number, number> = {}
+  const breakdownUSD: Record<number, number> = {}
+  let subtotalTL = 0
+  let subtotalUSD = 0
+
+  items.forEach(item => {
+    // Calculate total price for this item (including discount)
+    // item.totalPrice is already calculated as: quantity * unitPrice * (1 - discount/100)
+    // This is the pre-tax amount
+    const amount = item.totalPrice
+    const rate = item.kdvRate || 20
+    const kdv = kdvEnabled ? amount * (rate / 100) : 0
+    
+    if (item.currency === 'TL') {
+      subtotalTL += amount
+      breakdownTL[rate] = (breakdownTL[rate] || 0) + kdv
+    } else {
+       subtotalUSD += amount
+       breakdownUSD[rate] = (breakdownUSD[rate] || 0) + kdv
+    }
+  })
+  
+  return { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD }
+}
+
 const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
   const { quotation, companyInfo, exchangeRate } = data
+  
+  const { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD } = React.useMemo(() => 
+    calculateBreakdowns(quotation.items, quotation.kdvEnabled),
+    [quotation.items, quotation.kdvEnabled]
+  )
 
   // Format price with Turkish locale
   const formatPrice = (amount: number): string => {
@@ -479,32 +511,46 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             {/* Show subtotals if KDV is enabled */}
             {quotation.kdvEnabled && (
               <>
-                {quotation.totalTL && (
-                  <View style={styles.totalsRow}>
-                    <Text style={styles.totalsLabel}>Ara Toplam (TL):</Text>
-                    <Text style={styles.totalsValue}>
-                      {formatPrice(quotation.totalTL / (1 + (quotation.kdvRate || 20) / 100))} TL
-                    </Text>
-                  </View>
+                {(subtotalTL > 0) && (
+                  <>
+                    <View style={styles.totalsRow}>
+                      <Text style={styles.totalsLabel}>Ara Toplam (TL):</Text>
+                      <Text style={styles.totalsValue}>
+                        {formatPrice(subtotalTL)} TL
+                      </Text>
+                    </View>
+                    {Object.entries(breakdownTL).map(([rate, amount]) => (
+                        <View style={styles.totalsRow} key={`kdv-tl-${rate}`}>
+                            <Text style={styles.totalsLabel}>KDV (%{rate}):</Text>
+                            <Text style={styles.totalsValue}>
+                                {formatPrice(amount)} TL
+                            </Text>
+                        </View>
+                    ))}
+                  </>
                 )}
-                {quotation.totalUSD && (
-                  <View style={styles.totalsRow}>
-                    <Text style={styles.totalsLabel}>Ara Toplam (USD):</Text>
-                    <Text style={styles.totalsValue}>
-                      ${formatPrice(quotation.totalUSD / (1 + (quotation.kdvRate || 20) / 100))}
-                    </Text>
-                  </View>
+                {(subtotalUSD > 0) && (
+                  <>
+                    <View style={styles.totalsRow}>
+                      <Text style={styles.totalsLabel}>Ara Toplam (USD):</Text>
+                      <Text style={styles.totalsValue}>
+                        ${formatPrice(subtotalUSD)}
+                      </Text>
+                    </View>
+                    {Object.entries(breakdownUSD).map(([rate, amount]) => (
+                        <View style={styles.totalsRow} key={`kdv-usd-${rate}`}>
+                            <Text style={styles.totalsLabel}>KDV (%{rate}):</Text>
+                            <Text style={styles.totalsValue}>
+                                ${formatPrice(amount)}
+                            </Text>
+                        </View>
+                    ))}
+                  </>
                 )}
-                <View style={styles.totalsRow}>
-                  <Text style={styles.totalsLabel}>KDV (%{quotation.kdvRate || 20}):</Text>
-                  <Text style={styles.totalsValue}>
-                    {formatPrice((quotation.totalTL || 0) - (quotation.totalTL || 0) / (1 + (quotation.kdvRate || 20) / 100))} TL
-                  </Text>
-                </View>
               </>
             )}
             
-            {quotation.totalTL && (
+            {quotation.totalTL > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
@@ -512,7 +558,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                 <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL)} TL</Text>
               </View>
             )}
-            {quotation.totalUSD && (
+            {quotation.totalUSD > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}

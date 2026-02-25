@@ -528,16 +528,39 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                 acc.subtotalTL += itemTotal
                 acc.kdvAmountTL += itemKdvAmount
                 acc.totalTL += itemWithKdv
+                acc.breakdownTL[itemKdvRate] = (acc.breakdownTL[itemKdvRate] || 0) + itemKdvAmount
             } else {
                 acc.subtotalUSD += itemTotal
                 acc.kdvAmountUSD += itemKdvAmount
                 acc.totalUSD += itemWithKdv
+                acc.breakdownUSD[itemKdvRate] = (acc.breakdownUSD[itemKdvRate] || 0) + itemKdvAmount
             }
             return acc
-        }, { totalTL: 0, totalUSD: 0, subtotalTL: 0, subtotalUSD: 0, kdvAmountTL: 0, kdvAmountUSD: 0 })
+        }, { 
+            totalTL: 0, 
+            totalUSD: 0, 
+            subtotalTL: 0, 
+            subtotalUSD: 0, 
+            kdvAmountTL: 0, 
+            kdvAmountUSD: 0,
+            breakdownTL: {} as Record<number, number>,
+            breakdownUSD: {} as Record<number, number>
+        })
 
         // Apply total discount
         const discountMultiplier = 1 - (totalDiscount / 100)
+        
+        // Apply discount to breakdowns
+        const finalBreakdownTL: Record<number, number> = {}
+        const finalBreakdownUSD: Record<number, number> = {}
+        
+        Object.entries(totals.breakdownTL).forEach(([rate, amount]) => {
+            finalBreakdownTL[Number(rate)] = amount * discountMultiplier
+        })
+        
+        Object.entries(totals.breakdownUSD).forEach(([rate, amount]) => {
+            finalBreakdownUSD[Number(rate)] = amount * discountMultiplier
+        })
         
         return {
             totalTL: totals.totalTL * discountMultiplier,
@@ -547,7 +570,9 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             kdvAmountTL: totals.kdvAmountTL * discountMultiplier,
             kdvAmountUSD: totals.kdvAmountUSD * discountMultiplier,
             discountAmountTL: totals.totalTL * (totalDiscount / 100),
-            discountAmountUSD: totals.totalUSD * (totalDiscount / 100)
+            discountAmountUSD: totals.totalUSD * (totalDiscount / 100),
+            breakdownTL: finalBreakdownTL,
+            breakdownUSD: finalBreakdownUSD
         }
     }
 
@@ -952,10 +977,12 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                                 <span>Ara Toplam:</span>
                                                 <span>₺{totals.subtotalTL.toFixed(2)}</span>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span>KDV (%{kdvRate}):</span>
-                                                <span>₺{totals.kdvAmountTL.toFixed(2)}</span>
-                                            </div>
+                                            {Object.entries(totals.breakdownTL).map(([rate, amount]) => (
+                                                <div className="flex justify-between" key={`kdv-tl-${rate}`}>
+                                                    <span>KDV (%{rate}):</span>
+                                                    <span>₺{amount.toFixed(2)}</span>
+                                                </div>
+                                            ))}
                                             <hr />
                                         </>
                                     )}
@@ -979,10 +1006,12 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                                 <span>Ara Toplam:</span>
                                                 <span>${totals.subtotalUSD.toFixed(2)}</span>
                                             </div>
-                                            <div className="flex justify-between">
-                                                <span>KDV (%{kdvRate}):</span>
-                                                <span>${totals.kdvAmountUSD.toFixed(2)}</span>
-                                            </div>
+                                            {Object.entries(totals.breakdownUSD).map(([rate, amount]) => (
+                                                <div className="flex justify-between" key={`kdv-usd-${rate}`}>
+                                                    <span>KDV (%{rate}):</span>
+                                                    <span>${amount.toFixed(2)}</span>
+                                                </div>
+                                            ))}
                                             <hr />
                                         </>
                                     )}

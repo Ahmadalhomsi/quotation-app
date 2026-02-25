@@ -249,6 +249,33 @@ export default function QuotationDetailPage() {
     }
   }
 
+  const calculateBreakdowns = () => {
+    if (!quotation) return { breakdownTL: {}, breakdownUSD: {}, subtotalTL: 0, subtotalUSD: 0 }
+    
+    const breakdownTL: Record<number, number> = {}
+    const breakdownUSD: Record<number, number> = {}
+    let subtotalTL = 0
+    let subtotalUSD = 0
+
+    quotation.items.forEach(item => {
+      const amount = item.totalPrice
+      const rate = item.kdvRate || 20
+      const kdv = quotation.kdvEnabled ? amount * (rate / 100) : 0
+      
+      if (item.currency === 'TL') {
+        subtotalTL += amount
+        breakdownTL[rate] = (breakdownTL[rate] || 0) + kdv
+      } else {
+         subtotalUSD += amount
+         breakdownUSD[rate] = (breakdownUSD[rate] || 0) + kdv
+      }
+    })
+    
+    return { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD }
+  }
+
+  const { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD } = calculateBreakdowns()
+
   const handleDelete = async () => {
     if (!confirm('Bu teklifi silmek istediğinizden emin misiniz?')) return
     
@@ -590,22 +617,67 @@ export default function QuotationDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Toplam (TL):</span>
-                  <span className="font-mono font-bold text-lg">
-                    {formatPrice(quotation.totalTL || 0, 'TL')}
-                  </span>
-                </div>
-                {(quotation.totalUSD || 0) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Toplam (USD):</span>
-                    <span className="font-mono text-lg">
-                      {formatPrice(quotation.totalUSD || 0, 'USD')}
-                    </span>
-                  </div>
+                {/* TL Section */}
+                {quotation.totalTL > 0 && (
+                  <>
+                     {quotation.kdvEnabled && subtotalTL > 0 && (
+                        <>
+                            <div className="flex justify-between">
+                                <span className="text-sm text-muted-foreground">Ara Toplam (TL):</span>
+                                <span className="font-mono">{formatPrice(subtotalTL, 'TL')}</span>
+                            </div>
+                            {Object.entries(breakdownTL).map(([rate, amount]) => (
+                                <div className="flex justify-between text-sm" key={`kdv-tl-${rate}`}>
+                                    <span className="text-muted-foreground">KDV (%{rate}):</span>
+                                    <span className="font-mono">{formatPrice(amount, 'TL')}</span>
+                                </div>
+                            ))}
+                            <Separator className="my-2" />
+                        </>
+                     )}
+                     <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">
+                            {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
+                        </span>
+                        <span className="font-mono font-bold text-lg">
+                            {formatPrice(quotation.totalTL || 0, 'TL')}
+                        </span>
+                    </div>
+                  </>
                 )}
+                
+                {/* USD Section */}
+                {(quotation.totalUSD || 0) > 0 && (
+                    <>
+                        {quotation.totalTL > 0 && <Separator className="my-4" />}
+                        {quotation.kdvEnabled && subtotalUSD > 0 && (
+                            <>
+                                <div className="flex justify-between">
+                                    <span className="text-sm text-muted-foreground">Ara Toplam (USD):</span>
+                                    <span className="font-mono">{formatPrice(subtotalUSD, 'USD')}</span>
+                                </div>
+                                {Object.entries(breakdownUSD).map(([rate, amount]) => (
+                                    <div className="flex justify-between text-sm" key={`kdv-usd-${rate}`}>
+                                        <span className="text-muted-foreground">KDV (%{rate}):</span>
+                                        <span className="font-mono">{formatPrice(amount, 'USD')}</span>
+                                    </div>
+                                ))}
+                                <Separator className="my-2" />
+                            </>
+                        )}
+                        <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">
+                                {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
+                            </span>
+                            <span className="font-mono text-lg">
+                                {formatPrice(quotation.totalUSD || 0, 'USD')}
+                            </span>
+                        </div>
+                    </>
+                )}
+                
                 {quotation.exchangeRate && (
-                  <div className="pt-2 border-t">
+                  <div className="pt-2 border-t mt-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Döviz Kuru:</span>
                       <span className="font-mono">{Number(quotation.exchangeRate).toFixed(4)}</span>
