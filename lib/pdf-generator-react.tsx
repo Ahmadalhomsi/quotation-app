@@ -1,5 +1,6 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet, pdf, Font, Image } from '@react-pdf/renderer'
+import { PDFDocument } from 'pdf-lib'
 import { PdfExportData, QuotationItem, Currency } from './types'
 
 // Register fonts
@@ -610,12 +611,74 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
   )
 }
 
+// Cached template PDF bytes to avoid re-fetching on every generation
+let cachedTemplateBytes: ArrayBuffer | null = null
+
+/**
+ * Fetch and cache the template PDF from public folder.
+ * Returns null if the template is not available.
+ */
+async function getTemplatePdfBytes(): Promise<ArrayBuffer | null> {
+  if (cachedTemplateBytes) return cachedTemplateBytes
+  try {
+    const response = await fetch('/Converted-PDF-a4.pdf')
+    if (!response.ok) {
+      console.warn('Template PDF not found at /Converted-PDF-a4.pdf')
+      return null
+    }
+    cachedTemplateBytes = await response.arrayBuffer()
+    return cachedTemplateBytes
+  } catch (error) {
+    console.warn('Failed to fetch template PDF:', error)
+    return null
+  }
+}
+
+/**
+ * Merge generated quotation pages into the template PDF.
+ * Inserts quotation pages after page 3 and before the last page.
+ * Falls back to returning the raw quotation PDF if template is unavailable.
+ */
+async function mergeWithTemplate(quotationBlob: Blob): Promise<Blob> {
+  const templateBytes = await getTemplatePdfBytes()
+  if (!templateBytes) {
+    return quotationBlob
+  }
+
+  try {
+    const templatePdf = await PDFDocument.load(templateBytes)
+    const quotationBytes = await quotationBlob.arrayBuffer()
+    const quotationPdf = await PDFDocument.load(quotationBytes)
+
+    // Copy all quotation pages into the template document
+    const quotationPageIndices = quotationPdf.getPageIndices()
+    const copiedPages = await templatePdf.copyPages(quotationPdf, quotationPageIndices)
+
+    // Insert after page 3 and before the last page:
+    // insertion index = (totalPages - 1) puts pages right before the last template page
+    const insertIndex = templatePdf.getPageCount() - 1
+    copiedPages.forEach((page, i) => {
+      templatePdf.insertPage(insertIndex + i, page)
+    })
+
+    const mergedBytes = await templatePdf.save()
+    return new Blob([mergedBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
+  } catch (error) {
+    console.error('Error merging with template PDF, falling back to quotation-only:', error)
+    return quotationBlob
+  }
+}
+
 // Export functions for compatibility with existing code
 export class ReactPdfGenerator {
   static async generateQuotationPdf(data: PdfExportData): Promise<Blob> {
+    // Generate the quotation page(s) with @react-pdf/renderer
     const doc = <QuotationPDF data={data} />
-    const pdfBlob = await pdf(doc).toBlob()
-    return pdfBlob
+    const quotationBlob = await pdf(doc).toBlob()
+
+    // Merge with template PDF (inserts quotation after page 3, before last page)
+    const mergedBlob = await mergeWithTemplate(quotationBlob)
+    return mergedBlob
   }
 
   static async downloadQuotationPdf(data: PdfExportData, filename?: string): Promise<void> {
