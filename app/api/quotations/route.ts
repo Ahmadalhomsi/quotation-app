@@ -1,52 +1,98 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { QuotationStatus } from '../../generated/prisma'
+import { Prisma, QuotationStatus } from '../../generated/prisma'
 
 import prisma from '@/lib/prisma'
 
-// GET /api/quotations - Tüm teklifleri listele
+// GET /api/quotations - Tüm teklifleri listele (sayfalama + sunucu taraflı arama)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
     const customerId = searchParams.get('customerId')
-    
-    const where: { status?: QuotationStatus; customerId?: string } = {}
-    
+    const search = (searchParams.get('search') || '').trim()
+
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1)
+    const pageSizeRaw = parseInt(searchParams.get('pageSize') || '20', 10) || 20
+    const pageSize = Math.min(100, Math.max(1, pageSizeRaw))
+
+    const where: Prisma.QuotationWhereInput = {}
+
     if (status && Object.values(QuotationStatus).includes(status as QuotationStatus)) {
       where.status = status as QuotationStatus
     }
-    
+
     if (customerId) {
       where.customerId = customerId
     }
 
-    const quotations = await prisma.quotation.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc'
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            companyName: true,
-            contactName: true,
-            email: true,
-            phone: true
+    if (search) {
+      // Case-insensitive partial match across quotation number, title and
+      // the customer's company / contact / phone / email.
+      where.OR = [
+        { quotationNumber: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search, mode: 'insensitive' } },
+        { customer: { is: { companyName: { contains: search, mode: 'insensitive' } } } },
+        { customer: { is: { contactName: { contains: search, mode: 'insensitive' } } } },
+        { customer: { is: { phone: { contains: search, mode: 'insensitive' } } } },
+        { customer: { is: { email: { contains: search, mode: 'insensitive' } } } }
+      ]
+    }
+
+    const [total, quotations, aggregates] = await Promise.all([
+      prisma.quotation.count({ where }),
+      prisma.quotation.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              companyName: true,
+              contactName: true,
+              email: true,
+              phone: true
+            }
+          },
+          items: {
+            include: {
+              product: true
+            }
+          },
+          _count: {
+            select: { items: true }
           }
-        },
-        items: {
-          include: {
-            product: true
-          }
-        },
-        _count: {
-          select: { items: true }
         }
-      }
+      }),
+      prisma.quotation.aggregate({
+        where,
+        _count: { _all: true },
+        _sum: { totalTL: true, totalUSD: true }
+      })
+    ])
+
+    const sentCount = await prisma.quotation.count({
+      where: { ...where, status: QuotationStatus.SENT }
     })
 
-    return NextResponse.json({ quotations })
+    const totalPages = Math.max(1, Math.ceil(total / pageSize))
+
+    return NextResponse.json({
+      quotations,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages
+      },
+      stats: {
+        total,
+        sentCount,
+        totalTL: aggregates._sum.totalTL ? Number(aggregates._sum.totalTL) : 0,
+        totalUSD: aggregates._sum.totalUSD ? Number(aggregates._sum.totalUSD) : 0
+      }
+    })
   } catch (error) {
     console.error('Teklifler alınırken hata:', error)
     return NextResponse.json(

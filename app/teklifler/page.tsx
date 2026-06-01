@@ -1,19 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, FormEvent } from 'react'
 import Link from 'next/link'
-import { 
-  FileText, 
-  Plus, 
-  Search, 
+import {
+  FileText,
+  Plus,
+  Search,
   Edit,
   Eye,
   Download,
   Calendar,
   DollarSign,
   Trash2,
-  Phone
+  Phone,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -42,8 +43,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import { QuotationStatus, QuotationStatusLabels } from '@/lib/types'
-import { formatPrice, calculateTotal } from '@/lib/format'
+import { formatPrice } from '@/lib/format'
 import { ReactPdfGenerator } from '@/lib/pdf-generator-react'
 
 // Call tracking status (matching database values)
@@ -57,46 +67,122 @@ const CallStatusLabels: Record<CallStatus, string> = {
   'takip et': 'Takip Et'
 }
 
+interface PaginationInfo {
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+}
+
+interface QuotationStats {
+  total: number
+  sentCount: number
+  totalTL: number
+  totalUSD: number
+}
+
+const DEFAULT_PAGE_SIZE = 20
+
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    total: 0,
+    totalPages: 1
+  })
+  const [stats, setStats] = useState<QuotationStats>({
+    total: 0,
+    sentCount: 0,
+    totalTL: 0,
+    totalUSD: 0
+  })
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
   // Track call status for each quotation (using local state for now)
   const [callStatuses, setCallStatuses] = useState<Record<string, CallStatus>>({})
 
-  // Fetch quotations from API
-  useEffect(() => {
-    fetchQuotations()
-  }, [])
-
-  const fetchQuotations = async () => {
-    try {
-      setIsLoading(true)
-      const response = await fetch('/api/quotations')
-      const data = await response.json()
-      
-      if (response.ok) {
-        setQuotations(data.quotations || [])
-        
-        // Initialize call statuses from database
-        const initialCallStatuses: Record<string, CallStatus> = {}
-        data.quotations?.forEach((quotation: any) => {
-          if (quotation.callStatus) {
-            initialCallStatuses[quotation.id] = quotation.callStatus as CallStatus
-          }
+  const fetchQuotations = useCallback(
+    async (page: number, search: string, status: string) => {
+      try {
+        setIsLoading(true)
+        const params = new URLSearchParams({
+          page: String(page),
+          pageSize: String(DEFAULT_PAGE_SIZE)
         })
-        setCallStatuses(initialCallStatuses)
-      } else {
-        console.error('Teklifler alınamadı:', data.error)
+        if (search) params.set('search', search)
+        if (status && status !== 'all') params.set('status', status)
+
+        const response = await fetch(`/api/quotations?${params.toString()}`)
+        const data = await response.json()
+
+        if (response.ok) {
+          setQuotations(data.quotations || [])
+          if (data.pagination) {
+            setPagination(data.pagination)
+          }
+          if (data.stats) {
+            setStats(data.stats)
+          }
+
+          // Initialize call statuses from database
+          const initialCallStatuses: Record<string, CallStatus> = {}
+          data.quotations?.forEach((quotation: any) => {
+            if (quotation.callStatus) {
+              initialCallStatuses[quotation.id] = quotation.callStatus as CallStatus
+            }
+          })
+          setCallStatuses(initialCallStatuses)
+        } else {
+          console.error('Teklifler alınamadı:', data.error)
+          setQuotations([])
+        }
+      } catch (error) {
+        console.error('API hatası:', error)
         setQuotations([])
+      } finally {
+        setIsLoading(false)
       }
-    } catch (error) {
-      console.error('API hatası:', error)
-      setQuotations([])
-    } finally {
-      setIsLoading(false)
+    },
+    []
+  )
+
+  // Fetch quotations from API whenever the applied filter set changes
+  useEffect(() => {
+    fetchQuotations(currentPage, appliedSearch, statusFilter)
+  }, [currentPage, appliedSearch, statusFilter, fetchQuotations])
+
+  // If the user lands on a page that no longer has data (e.g. after deleting
+  // items), bounce back to page 1 of the current filter.
+  useEffect(() => {
+    if (!isLoading && pagination.total > 0 && currentPage > pagination.totalPages) {
+      setCurrentPage(1)
     }
+  }, [isLoading, pagination.total, pagination.totalPages, currentPage])
+
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    setCurrentPage(1)
+    setAppliedSearch(searchInput.trim())
+  }
+
+  const handleSearchClear = () => {
+    setSearchInput('')
+    setAppliedSearch('')
+    setCurrentPage(1)
+  }
+
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value)
+    setCurrentPage(1)
+  }
+
+  const goToPage = (page: number) => {
+    if (page < 1 || page > pagination.totalPages || page === currentPage) return
+    setCurrentPage(page)
   }
 
   const handleStatusUpdate = async (quotationId: string, newStatus: QuotationStatus) => {
@@ -118,6 +204,11 @@ export default function QuotationsPage() {
               : quotation
           )
         )
+        // If a filter is applied, the SENT stat may need to be recomputed
+        if (statusFilter === 'all' || statusFilter === QuotationStatus.SENT || statusFilter === newStatus) {
+          // Re-fetch stats silently
+          fetchQuotations(currentPage, appliedSearch, statusFilter)
+        }
       } else {
         const errorData = await response.json()
         console.error('Durum güncellenemedi:', errorData.error)
@@ -166,7 +257,7 @@ export default function QuotationsPage() {
         ...prev,
         [quotationId]: newCallStatus
       }))
-      
+
       const statusLabel = CallStatusLabels[newCallStatus]
       toast.success(`Arama durumu güncellendi: ${statusLabel}`)
     } catch (error) {
@@ -186,11 +277,9 @@ export default function QuotationsPage() {
       })
 
       if (response.ok) {
-        // Remove from local state
-        setQuotations(prevQuotations =>
-          prevQuotations.filter(quotation => quotation.id !== quotationId)
-        )
         toast.success('Teklif başarıyla silindi')
+        // Re-fetch to get fresh pagination + stats
+        fetchQuotations(currentPage, appliedSearch, statusFilter)
       } else {
         const errorData = await response.json()
         console.error('Teklif silinemedi:', errorData.error)
@@ -202,31 +291,22 @@ export default function QuotationsPage() {
     }
   }
 
-  const filteredQuotations = quotations.filter(quotation => {
-    const term = searchTerm.toLowerCase().trim()
-    if (!term) {
-      const matchesStatus = statusFilter === 'all' || quotation.status === statusFilter
-      return matchesStatus
+  // Build a compact list of page numbers to render in the pagination control
+  const buildPageItems = (): (number | 'ellipsis')[] => {
+    const total = pagination.totalPages
+    const current = currentPage
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1)
     }
-
-    const customer = quotation.customer
-    const haystacks: (string | null | undefined)[] = [
-      quotation.quotationNumber,
-      quotation.title,
-      customer?.companyName,
-      customer?.contactName,
-      customer?.phone,
-      customer?.email
-    ]
-
-    const matchesSearch = haystacks.some(field =>
-      field ? String(field).toLowerCase().includes(term) : false
-    )
-
-    const matchesStatus = statusFilter === 'all' || quotation.status === statusFilter
-
-    return matchesSearch && matchesStatus
-  })
+    const items: (number | 'ellipsis')[] = [1]
+    const start = Math.max(2, current - 1)
+    const end = Math.min(total - 1, current + 1)
+    if (start > 2) items.push('ellipsis')
+    for (let p = start; p <= end; p++) items.push(p)
+    if (end < total - 1) items.push('ellipsis')
+    items.push(total)
+    return items
+  }
 
   if (isLoading) {
     return (
@@ -297,28 +377,26 @@ export default function QuotationsPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{quotations.length}</div>
+            <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              Tüm zamanlar
+              {appliedSearch || statusFilter !== 'all' ? 'Filtreye uyan' : 'Tüm zamanlar'}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Gönderilen Teklifler</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {quotations.filter((q: any) => q.status === QuotationStatus.SENT).length}
-            </div>
+            <div className="text-2xl font-bold">{stats.sentCount}</div>
             <p className="text-xs text-muted-foreground">
               Yanıt beklenilen
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Toplam Tutar</CardTitle>
@@ -326,7 +404,7 @@ export default function QuotationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPrice(calculateTotal(quotations, 'totalTL'), 'TL')}
+              {formatPrice(stats.totalTL, 'TL')}
             </div>
             <p className="text-xs text-muted-foreground">
               Türk Lirası cinsinden
@@ -337,17 +415,38 @@ export default function QuotationsPage() {
 
       {/* Filtreler */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-sm">
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Teklif no, başlık, müşteri adı, telefon veya e-posta ile ara..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="pl-9 pr-20"
+            inputMode="search"
           />
-        </div>
+          {searchInput && searchInput !== appliedSearch && (
+            <Button
+              type="submit"
+              size="sm"
+              variant="ghost"
+              className="absolute right-1 top-1 h-7 px-2 text-xs"
+            >
+              Ara
+            </Button>
+          )}
+          {appliedSearch && (
+            <button
+              type="button"
+              onClick={handleSearchClear}
+              className="absolute right-2 top-3 text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Aramayı temizle"
+            >
+              {searchInput === appliedSearch ? '×' : ''}
+            </button>
+          )}
+        </form>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
           <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Durum filtrele" />
           </SelectTrigger>
@@ -367,23 +466,54 @@ export default function QuotationsPage() {
         <CardHeader>
           <CardTitle>Teklifler</CardTitle>
           <CardDescription>
-            {filteredQuotations.length} teklif bulundu
+            {isLoading ? (
+              <span className="inline-flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Yükleniyor...
+              </span>
+            ) : (
+              <>
+                {stats.total} teklif bulundu
+                {pagination.totalPages > 1 && (
+                  <span className="text-muted-foreground">
+                    {' '}· Sayfa {currentPage} / {pagination.totalPages}
+                  </span>
+                )}
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {quotations.length === 0 ? (
+          {stats.total === 0 && !isLoading ? (
             <div className="text-center py-8">
               <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Henüz teklif bulunmuyor</h3>
+              <h3 className="text-lg font-medium mb-2">
+                {appliedSearch || statusFilter !== 'all'
+                  ? 'Filtreye uyan teklif bulunamadı'
+                  : 'Henüz teklif bulunmuyor'}
+              </h3>
               <p className="text-muted-foreground mb-4">
-                İlk teklifinizi oluşturmak için başlayın.
+                {appliedSearch || statusFilter !== 'all'
+                  ? 'Farklı bir arama veya filtre deneyin.'
+                  : 'İlk teklifinizi oluşturmak için başlayın.'}
               </p>
-              <Button asChild>
-                <Link href="/teklifler/yeni">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Yeni Teklif Oluştur
-                </Link>
-              </Button>
+              {appliedSearch || statusFilter !== 'all' ? (
+                <Button variant="outline" onClick={handleSearchClear}>
+                  Aramayı temizle
+                </Button>
+              ) : (
+                <Button asChild>
+                  <Link href="/teklifler/yeni">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Yeni Teklif Oluştur
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              Teklifler yükleniyor...
             </div>
           ) : (
             <>
@@ -403,7 +533,7 @@ export default function QuotationsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredQuotations.map((quotation: any) => (
+                    {quotations.map((quotation: any) => (
                       <TableRow key={quotation.id}>
                         <TableCell>
                           <div>
@@ -523,7 +653,7 @@ export default function QuotationsPage() {
 
               {/* Mobil kart görünümü */}
               <div className="md:hidden space-y-3">
-                {filteredQuotations.map((quotation: any) => {
+                {quotations.map((quotation: any) => {
                   const callStatus: CallStatus = callStatuses[quotation.id] || 'arandı'
                   return (
                     <Card key={quotation.id} className="overflow-hidden">
@@ -665,12 +795,55 @@ export default function QuotationsPage() {
                     </Card>
                   )
                 })}
-                {filteredQuotations.length === 0 && (
-                  <div className="text-center py-8 text-sm text-muted-foreground">
-                    Aramayla eşleşen teklif bulunamadı.
-                  </div>
-                )}
               </div>
+
+              {pagination.totalPages > 1 && (
+                <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Sayfa başına {pagination.pageSize} kayıt
+                  </p>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          onClick={(e) => {
+                            e.preventDefault()
+                            goToPage(currentPage - 1)
+                          }}
+                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                      {buildPageItems().map((item, idx) => (
+                        <PaginationItem key={`${item}-${idx}`}>
+                          {item === 'ellipsis' ? (
+                            <PaginationEllipsis />
+                          ) : (
+                            <PaginationLink
+                              isActive={item === currentPage}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                goToPage(item)
+                              }}
+                              className="cursor-pointer"
+                            >
+                              {item}
+                            </PaginationLink>
+                          )}
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          onClick={(e) => {
+                            e.preventDefault()
+                            goToPage(currentPage + 1)
+                          }}
+                          className={currentPage >= pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
             </>
           )}
         </CardContent>
