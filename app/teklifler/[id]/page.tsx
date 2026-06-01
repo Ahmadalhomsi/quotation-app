@@ -352,33 +352,33 @@ export default function QuotationDetailPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/teklifler">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Geri
             </Link>
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-3xl font-bold tracking-tight truncate">
               {quotation.quotationNumber}
             </h1>
-            <p className="text-muted-foreground">{quotation.title}</p>
+            <p className="text-muted-foreground text-sm truncate">{quotation.title}</p>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleDownloadPdf}>
+        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap sm:space-x-2">
+          <Button variant="outline" onClick={handleDownloadPdf} size="sm" className="flex-1 sm:flex-none">
             <Download className="mr-2 h-4 w-4" />
-            PDF İndir
+            PDF
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild size="sm" className="flex-1 sm:flex-none">
             <Link href={`/teklifler/${quotation.id}/duzenle`}>
               <Edit className="mr-2 h-4 w-4" />
               Düzenle
             </Link>
           </Button>
-          <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:text-red-800">
+          <Button variant="outline" onClick={handleDelete} size="sm" className="flex-1 sm:flex-none text-red-600 hover:text-red-800">
             <Trash2 className="mr-2 h-4 w-4" />
             Sil
           </Button>
@@ -512,64 +512,129 @@ export default function QuotationDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Ürün</TableHead>
-                    <TableHead className="text-center">Miktar</TableHead>
-                    <TableHead className="text-right">Birim Fiyat</TableHead>
-                    <TableHead className="text-center">İskonto</TableHead>
-                    {quotation.showProductKdv && <TableHead className="text-center">KDV (%)</TableHead>}
-                    <TableHead className="text-right">Toplam</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {quotation.items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          {item.product.photoUrl && (
-                            <div className="w-12 h-12 border rounded overflow-hidden bg-muted flex-shrink-0">
-                              <Image 
-                                src={item.product.photoUrl} 
-                                alt={item.product.name}
-                                width={48}
-                                height={48}
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                          )}
-                          <div>
-                            <div className="font-medium">{item.product.name}</div>
-                            {item.product.description && (
-                              <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                {item.product.description}
+              {/* Masaüstü tablo görünümü */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ürün</TableHead>
+                      <TableHead className="text-center">Miktar</TableHead>
+                      <TableHead className="text-right">Birim Fiyat</TableHead>
+                      <TableHead className="text-center">İskonto</TableHead>
+                      {quotation.showProductKdv && <TableHead className="text-center">KDV (%)</TableHead>}
+                      <TableHead className="text-right">Toplam</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {quotation.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            {item.product.photoUrl && (
+                              <div className="w-12 h-12 border rounded overflow-hidden bg-muted flex-shrink-0">
+                                <Image
+                                  src={item.product.photoUrl}
+                                  alt={item.product.name}
+                                  width={48}
+                                  height={48}
+                                  className="w-full h-full object-contain"
+                                />
                               </div>
                             )}
+                            <div>
+                              <div className="font-medium">{item.product.name}</div>
+                              {item.product.description && (
+                                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {item.product.description}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell className="text-right font-mono">
-                        {formatPrice(item.unitPrice, item.currency as 'TL' | 'USD')}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.discount && item.discount > 0 ? `%${item.discount}` : '-'}
-                      </TableCell>
-                      {quotation.showProductKdv && (
+                        </TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatPrice(item.unitPrice, item.currency as 'TL' | 'USD')}
+                        </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline">
+                          {item.discount && item.discount > 0 ? `%${item.discount}` : '-'}
+                        </TableCell>
+                        {quotation.showProductKdv && (
+                          <TableCell className="text-center">
+                            <Badge variant="outline">
+                              %{Number(item.kdvRate || 20).toFixed(0)}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        <TableCell className="text-right font-mono font-medium">
+                          {formatPrice(item.totalPrice, item.currency as 'TL' | 'USD')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobil kart görünümü */}
+              <div className="md:hidden space-y-3">
+                {quotation.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border rounded-lg p-3 space-y-2"
+                  >
+                    <div className="flex items-start gap-3">
+                      {item.product.photoUrl && (
+                        <div className="w-12 h-12 border rounded overflow-hidden bg-muted flex-shrink-0">
+                          <Image
+                            src={item.product.photoUrl}
+                            alt={item.product.name}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-sm leading-snug">{item.product.name}</div>
+                        {item.product.description && (
+                          <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {item.product.description}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Miktar</span>
+                        <span className="font-medium">{item.quantity}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Birim</span>
+                        <span className="font-mono">{formatPrice(item.unitPrice, item.currency as 'TL' | 'USD')}</span>
+                      </div>
+                      {item.discount && item.discount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">İskonto</span>
+                          <span className="font-medium">%{item.discount}</span>
+                        </div>
+                      )}
+                      {quotation.showProductKdv && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">KDV</span>
+                          <Badge variant="outline" className="text-[10px] py-0">
                             %{Number(item.kdvRate || 20).toFixed(0)}
                           </Badge>
-                        </TableCell>
+                        </div>
                       )}
-                      <TableCell className="text-right font-mono font-medium">
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t">
+                      <span className="text-xs text-muted-foreground">Toplam</span>
+                      <span className="font-mono font-semibold">
                         {formatPrice(item.totalPrice, item.currency as 'TL' | 'USD')}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 

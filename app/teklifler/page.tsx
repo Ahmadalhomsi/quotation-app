@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -202,12 +203,28 @@ export default function QuotationsPage() {
   }
 
   const filteredQuotations = quotations.filter(quotation => {
-    const matchesSearch = quotation.quotationNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          quotation.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          quotation.customer?.companyName?.toLowerCase().includes(searchTerm.toLowerCase())
-    
+    const term = searchTerm.toLowerCase().trim()
+    if (!term) {
+      const matchesStatus = statusFilter === 'all' || quotation.status === statusFilter
+      return matchesStatus
+    }
+
+    const customer = quotation.customer
+    const haystacks: (string | null | undefined)[] = [
+      quotation.quotationNumber,
+      quotation.title,
+      customer?.companyName,
+      customer?.contactName,
+      customer?.phone,
+      customer?.email
+    ]
+
+    const matchesSearch = haystacks.some(field =>
+      field ? String(field).toLowerCase().includes(term) : false
+    )
+
     const matchesStatus = statusFilter === 'all' || quotation.status === statusFilter
-    
+
     return matchesSearch && matchesStatus
   })
 
@@ -224,17 +241,47 @@ export default function QuotationsPage() {
     )
   }
 
+  const getStatusBadgeClass = (status: QuotationStatus) => {
+    switch (status) {
+      case QuotationStatus.DRAFT:
+        return 'bg-gray-100 text-gray-800'
+      case QuotationStatus.SENT:
+        return 'bg-blue-100 text-blue-800'
+      case QuotationStatus.ACCEPTED:
+        return 'bg-green-100 text-green-800'
+      case QuotationStatus.REJECTED:
+        return 'bg-red-100 text-red-800'
+      case QuotationStatus.EXPIRED:
+        return 'bg-orange-100 text-orange-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getCallStatusBadgeClass = (status: CallStatus) => {
+    switch (status) {
+      case 'arandı':
+        return 'bg-green-100 text-green-800'
+      case '1 daha ara':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'takip et':
+        return 'bg-blue-100 text-blue-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Başlık */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Teklif Yönetimi</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Teklif Yönetimi</h1>
+          <p className="text-muted-foreground text-sm">
             Müşteri tekliflerinizi görüntüleyin ve yönetin
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/teklifler/yeni">
             <Plus className="mr-2 h-4 w-4" />
             Yeni Teklif
@@ -289,19 +336,19 @@ export default function QuotationsPage() {
       </div>
 
       {/* Filtreler */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Teklif ara..."
+            placeholder="Teklif no, başlık, müşteri adı, telefon veya e-posta ile ara..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-9"
           />
         </div>
-        
+
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Durum filtrele" />
           </SelectTrigger>
           <SelectContent>
@@ -339,146 +386,292 @@ export default function QuotationsPage() {
               </Button>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Teklif No / Başlık</TableHead>
-                  <TableHead>Müşteri / Telefon</TableHead>
-                  <TableHead>Durum</TableHead>
-                  <TableHead>Arama Durumu</TableHead>
-                  <TableHead>Toplam (TL)</TableHead>
-                  <TableHead>Toplam (USD)</TableHead>
-                  <TableHead>Geçerlilik</TableHead>
-                  <TableHead className="text-right">İşlemler</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredQuotations.map((quotation: any) => (
-                  <TableRow key={quotation.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{quotation.quotationNumber}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {quotation.title}
+            <>
+              {/* Masaüstü tablo görünümü */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Teklif No / Başlık</TableHead>
+                      <TableHead>Müşteri / Telefon</TableHead>
+                      <TableHead>Durum</TableHead>
+                      <TableHead>Arama Durumu</TableHead>
+                      <TableHead>Toplam (TL)</TableHead>
+                      <TableHead>Toplam (USD)</TableHead>
+                      <TableHead>Geçerlilik</TableHead>
+                      <TableHead className="text-right">İşlemler</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredQuotations.map((quotation: any) => (
+                      <TableRow key={quotation.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{quotation.quotationNumber}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {quotation.title}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{quotation.customer?.companyName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {quotation.customer?.contactName}
+                            </div>
+                            {quotation.customer?.phone && (
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                                <Phone className="h-3 w-3" />
+                                {quotation.customer.phone}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={quotation.status}
+                            onValueChange={(value: QuotationStatus) => handleStatusUpdate(quotation.id, value)}
+                          >
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.values(QuotationStatus).map((statusValue) => (
+                                <SelectItem key={statusValue} value={statusValue}>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(statusValue)}`}>
+                                    {QuotationStatusLabels[statusValue]}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={callStatuses[quotation.id] || 'arandı'}
+                            onValueChange={(value: CallStatus) => handleCallStatusUpdate(quotation.id, value)}
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CALL_STATUSES.map((callStatusValue) => (
+                                <SelectItem key={callStatusValue} value={callStatusValue}>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCallStatusBadgeClass(callStatusValue)}`}>
+                                    {CallStatusLabels[callStatusValue]}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {quotation.totalTL ? formatPrice(quotation.totalTL, 'TL') : '-'}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {quotation.totalUSD ? formatPrice(quotation.totalUSD, 'USD') : '-'}
+                        </TableCell>
+                        <TableCell>
+                          {quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString('tr-TR') : '-'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDownloadPdf(quotation)}
+                              title="PDF İndir"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              title="Görüntüle"
+                            >
+                              <Link href={`/teklifler/${quotation.id}`}>
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              title="Düzenle"
+                            >
+                              <Link href={`/teklifler/${quotation.id}/duzenle`}>
+                                <Edit className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
+                              title="Sil"
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobil kart görünümü */}
+              <div className="md:hidden space-y-3">
+                {filteredQuotations.map((quotation: any) => {
+                  const callStatus: CallStatus = callStatuses[quotation.id] || 'arandı'
+                  return (
+                    <Card key={quotation.id} className="overflow-hidden">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="font-mono text-xs text-muted-foreground">
+                              {quotation.quotationNumber}
+                            </div>
+                            <div className="font-medium truncate">
+                              {quotation.customer?.companyName || 'Müşteri yok'}
+                            </div>
+                            <div className="text-sm text-muted-foreground truncate">
+                              {quotation.title}
+                            </div>
+                          </div>
+                          <Badge className={`${getStatusBadgeClass(quotation.status as QuotationStatus)} shrink-0`}>
+                            {QuotationStatusLabels[quotation.status as QuotationStatus]}
+                          </Badge>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{quotation.customer?.companyName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {quotation.customer?.contactName}
+
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <div className="text-xs text-muted-foreground">Müşteri</div>
+                            <div className="truncate">{quotation.customer?.contactName || '-'}</div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Geçerlilik</div>
+                            <div>
+                              {quotation.validUntil
+                                ? new Date(quotation.validUntil).toLocaleDateString('tr-TR')
+                                : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Toplam (TL)</div>
+                            <div className="font-mono">
+                              {quotation.totalTL ? formatPrice(quotation.totalTL, 'TL') : '-'}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs text-muted-foreground">Toplam (USD)</div>
+                            <div className="font-mono">
+                              {quotation.totalUSD ? formatPrice(quotation.totalUSD, 'USD') : '-'}
+                            </div>
+                          </div>
                         </div>
+
                         {quotation.customer?.phone && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                          <a
+                            href={`tel:${quotation.customer.phone}`}
+                            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+                          >
                             <Phone className="h-3 w-3" />
                             {quotation.customer.phone}
-                          </div>
+                          </a>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Select 
-                        value={quotation.status} 
-                        onValueChange={(value: QuotationStatus) => handleStatusUpdate(quotation.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.values(QuotationStatus).map((statusValue) => (
-                            <SelectItem key={statusValue} value={statusValue}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                statusValue === QuotationStatus.DRAFT ? 'bg-gray-100 text-gray-800' :
-                                statusValue === QuotationStatus.SENT ? 'bg-blue-100 text-blue-800' :
-                                statusValue === QuotationStatus.ACCEPTED ? 'bg-green-100 text-green-800' :
-                                statusValue === QuotationStatus.REJECTED ? 'bg-red-100 text-red-800' :
-                                'bg-orange-100 text-orange-800'
-                              }`}>
-                                {QuotationStatusLabels[statusValue]}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Select 
-                        value={callStatuses[quotation.id] || 'arandı'} 
-                        onValueChange={(value: CallStatus) => handleCallStatusUpdate(quotation.id, value)}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CALL_STATUSES.map((callStatusValue) => (
-                            <SelectItem key={callStatusValue} value={callStatusValue}>
-                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                callStatusValue === 'arandı' ? 'bg-green-100 text-green-800' :
-                                callStatusValue === '1 daha ara' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-blue-100 text-blue-800'
-                              }`}>
-                                {CallStatusLabels[callStatusValue]}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="font-mono">
-                      {quotation.totalTL ? formatPrice(quotation.totalTL, 'TL') : '-'}
-                    </TableCell>
-                    <TableCell className="font-mono">
-                      {quotation.totalUSD ? formatPrice(quotation.totalUSD, 'USD') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {quotation.validUntil ? new Date(quotation.validUntil).toLocaleDateString('tr-TR') : '-'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDownloadPdf(quotation)}
-                          title="PDF İndir"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          title="Görüntüle"
-                        >
-                          <Link href={`/teklifler/${quotation.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          title="Düzenle"
-                        >
-                          <Link href={`/teklifler/${quotation.id}/duzenle`}>
-                            <Edit className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
-                          title="Sil"
-                          className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select
+                            value={quotation.status}
+                            onValueChange={(value: QuotationStatus) => handleStatusUpdate(quotation.id, value)}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.values(QuotationStatus).map((statusValue) => (
+                                <SelectItem key={statusValue} value={statusValue}>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(statusValue)}`}>
+                                    {QuotationStatusLabels[statusValue]}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Select
+                            value={callStatus}
+                            onValueChange={(value: CallStatus) => handleCallStatusUpdate(quotation.id, value)}
+                          >
+                            <SelectTrigger className="h-9 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {CALL_STATUSES.map((callStatusValue) => (
+                                <SelectItem key={callStatusValue} value={callStatusValue}>
+                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCallStatusBadgeClass(callStatusValue)}`}>
+                                    {CallStatusLabels[callStatusValue]}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-1 pt-1 border-t">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDownloadPdf(quotation)}
+                            title="PDF İndir"
+                            className="h-9 w-9"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            title="Görüntüle"
+                            className="h-9 w-9"
+                          >
+                            <Link href={`/teklifler/${quotation.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            asChild
+                            title="Düzenle"
+                            className="h-9 w-9"
+                          >
+                            <Link href={`/teklifler/${quotation.id}/duzenle`}>
+                              <Edit className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
+                            title="Sil"
+                            className="h-9 w-9 text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+                {filteredQuotations.length === 0 && (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    Aramayla eşleşen teklif bulunamadı.
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
