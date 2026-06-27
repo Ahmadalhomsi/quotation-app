@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -78,7 +78,7 @@ interface CloneItem {
   totalPrice: number
 }
 
-export default function NewQuotationPage() {
+function NewQuotationContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const cloneId = searchParams.get('clone')
@@ -336,5 +336,31 @@ export default function NewQuotationPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function NewQuotationPage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-8">
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" size="icon" asChild>
+              <Link href="/teklifler">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </Button>
+            <h1 className="text-3xl font-bold">Yeni Teklif</h1>
+          </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground">Yükleniyor...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    }>
+      <NewQuotationContent />
+    </Suspense>
   )
 }
