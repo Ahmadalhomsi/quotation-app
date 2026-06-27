@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, FormEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   FileText,
   Plus,
@@ -14,7 +15,8 @@ import {
   DollarSign,
   Trash2,
   Phone,
-  Loader2
+  Loader2,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -84,6 +86,7 @@ interface QuotationStats {
 const DEFAULT_PAGE_SIZE = 20
 
 export default function QuotationsPage() {
+  const router = useRouter()
   const [quotations, setQuotations] = useState<any[]>([])
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -264,6 +267,10 @@ export default function QuotationsPage() {
       console.error('Arama durumu güncelleme hatası:', error)
       toast.error('Arama durumu güncellenirken hata oluştu')
     }
+  }
+
+  const handleCloneQuotation = (quotationId: string) => {
+    router.push(`/teklifler/yeni?clone=${quotationId}`)
   }
 
   const handleDeleteQuotation = async (quotationId: string, quotationNumber: string) => {
@@ -523,6 +530,7 @@ export default function QuotationsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Teklif No / Başlık</TableHead>
+                      <TableHead>Tarih</TableHead>
                       <TableHead>Müşteri / Telefon</TableHead>
                       <TableHead>Durum</TableHead>
                       <TableHead>Arama Durumu</TableHead>
@@ -541,6 +549,11 @@ export default function QuotationsPage() {
                             <div className="text-sm text-muted-foreground">
                               {quotation.title}
                             </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {new Date(quotation.createdAt).toLocaleDateString('tr-TR')}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -637,6 +650,14 @@ export default function QuotationsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => handleCloneQuotation(quotation.id)}
+                              title="Kopyala"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
                               title="Sil"
                               className="text-red-600 hover:text-red-800 hover:bg-red-50"
@@ -670,9 +691,14 @@ export default function QuotationsPage() {
                               {quotation.title}
                             </div>
                           </div>
-                          <Badge className={`${getStatusBadgeClass(quotation.status as QuotationStatus)} shrink-0`}>
-                            {QuotationStatusLabels[quotation.status as QuotationStatus]}
-                          </Badge>
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <Badge className={`${getStatusBadgeClass(quotation.status as QuotationStatus)} shrink-0`}>
+                              {QuotationStatusLabels[quotation.status as QuotationStatus]}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(quotation.createdAt).toLocaleDateString('tr-TR')}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -780,6 +806,15 @@ export default function QuotationsPage() {
                             <Link href={`/teklifler/${quotation.id}/duzenle`}>
                               <Edit className="h-4 w-4" />
                             </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCloneQuotation(quotation.id)}
+                            title="Kopyala"
+                            className="h-9 w-9"
+                          >
+                            <Copy className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"

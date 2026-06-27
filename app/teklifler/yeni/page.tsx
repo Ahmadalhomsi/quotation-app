@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -49,8 +49,39 @@ interface QuotationItem {
   totalPrice: number
 }
 
+interface CloneData {
+  initialData: CreateQuotationData
+  initialItems: QuotationItem[]
+  initialKdvEnabled: boolean
+  initialKdvRate: number
+  initialExchangeRate: number
+  initialTotalDiscount: number
+  initialShowProductKdv: boolean
+}
+
+interface CloneItem {
+  id: string
+  productId: string
+  quantity: number
+  unitPrice: number
+  currency: Currency
+  discount?: number
+  kdvRate: number
+  product: {
+    id: string
+    name: string
+    description?: string
+    price: number
+    currency: Currency
+    kdvRate: number
+  }
+  totalPrice: number
+}
+
 export default function NewQuotationPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const cloneId = searchParams.get('clone')
   const [isLoading, setIsLoading] = useState(false)
 
   // Data states
@@ -58,6 +89,7 @@ export default function NewQuotationPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cloneData, setCloneData] = useState<CloneData | null>(null)
 
   // Fetch initial data
   useEffect(() => {
@@ -65,10 +97,16 @@ export default function NewQuotationPage() {
       try {
         setLoadingData(true)
 
-        const [customersResponse, productsResponse] = await Promise.all([
+        const fetches: Promise<Response>[] = [
           fetch('/api/customers'),
-          fetch('/api/products?active=true')
-        ])
+          fetch('/api/products?active=true'),
+        ]
+
+        if (cloneId) {
+          fetches.push(fetch(`/api/quotations/${cloneId}`))
+        }
+
+        const [customersResponse, productsResponse, cloneResponse] = await Promise.all(fetches)
 
         if (!customersResponse.ok) {
           throw new Error('Müşteriler alınamadı')
@@ -84,6 +122,50 @@ export default function NewQuotationPage() {
         setCustomers(customersData.customers || [])
         setProducts(productsData.products || [])
 
+        if (cloneId && cloneResponse && cloneResponse.ok) {
+          const cloneQuotation = await cloneResponse.json()
+
+          const initialData: CreateQuotationData = {
+            title: cloneQuotation.title,
+            description: cloneQuotation.description || '',
+            customerId: cloneQuotation.customerId,
+            validUntil: new Date(cloneQuotation.validUntil),
+            terms: cloneQuotation.terms || '',
+            notes: cloneQuotation.notes || '',
+            items: []
+          }
+
+          const initialItems: QuotationItem[] = cloneQuotation.items.map(
+            (item: CloneItem) => ({
+            id: `clone-${item.id}`,
+            productId: item.productId,
+            quantity: Number(item.quantity),
+            unitPrice: Number(item.unitPrice),
+            currency: item.currency,
+            discount: Number(item.discount) || 0,
+            kdvRate: Number(item.kdvRate) || 20,
+            product: {
+              id: item.product.id,
+              name: item.product.name,
+              description: item.product.description || undefined,
+              price: Number(item.product.price),
+              currency: item.product.currency,
+              kdvRate: Number(item.product.kdvRate) || 20,
+            },
+            totalPrice: Number(item.totalPrice)
+          }))
+
+          setCloneData({
+            initialData,
+            initialItems,
+            initialKdvEnabled: cloneQuotation.kdvEnabled ?? true,
+            initialKdvRate: Number(cloneQuotation.kdvRate) || 20,
+            initialExchangeRate: Number(cloneQuotation.exchangeRate) || 30,
+            initialTotalDiscount: Number(cloneQuotation.totalDiscount) || 0,
+            initialShowProductKdv: cloneQuotation.showProductKdv ?? false,
+          })
+        }
+
       } catch (error) {
         console.error('Veri yükleme hatası:', error)
         setError(error instanceof Error ? error.message : 'Veriler yüklenirken hata oluştu')
@@ -93,7 +175,7 @@ export default function NewQuotationPage() {
     }
 
     fetchData()
-  }, [])
+  }, [cloneId])
 
   const handleCustomerCreated = (customer: Customer) => {
     setCustomers(prev => [...prev, customer])
@@ -219,9 +301,11 @@ export default function NewQuotationPage() {
               </Link>
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">Yeni Teklif Oluştur</h1>
+              <h1 className="text-3xl font-bold">{cloneId ? 'Teklifi Kopyala' : 'Yeni Teklif Oluştur'}</h1>
               <p className="text-muted-foreground">
-                Müşterileriniz için profesyonel teklifler hazırlayın
+                {cloneId
+                  ? 'Mevcut teklifin kopyasını oluşturun'
+                  : 'Müşterileriniz için profesyonel teklifler hazırlayın'}
               </p>
             </div>
           </div>
@@ -236,6 +320,13 @@ export default function NewQuotationPage() {
         {/* Quotation Form */}
         <QuotationForm
           mode="create"
+          initialData={cloneData?.initialData}
+          initialItems={cloneData?.initialItems}
+          initialKdvEnabled={cloneData?.initialKdvEnabled}
+          initialKdvRate={cloneData?.initialKdvRate}
+          initialExchangeRate={cloneData?.initialExchangeRate}
+          initialTotalDiscount={cloneData?.initialTotalDiscount}
+          initialShowProductKdv={cloneData?.initialShowProductKdv}
           onSubmit={handleSubmit}
           customers={customers}
           products={products}
