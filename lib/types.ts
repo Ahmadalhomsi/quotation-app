@@ -37,7 +37,7 @@ export enum QuotationStatus {
 // Müşteri tipleri
 export interface Customer {
   id: string
-  companyName: string         // Şirket Adı
+  companyName?: string        // Şirket Adı
   contactName: string         // İletişim Kişisi
   email: string
   phone?: string
@@ -66,7 +66,7 @@ export interface CustomerActivity {
 }
 
 export interface CreateCustomerData {
-  companyName: string
+  companyName?: string
   contactName: string
   email?: string  // Make email optional
   phone?: string
@@ -318,7 +318,7 @@ export const ProductSchema = {
 }
 
 export const CustomerSchema = {
-  companyName: { required: 'Şirket adı gereklidir' },
+  companyName: { optional: true },
   contactName: { required: 'İletişim kişisi gereklidir' },
   email: { required: 'E-posta gereklidir', pattern: { value: /^\S+@\S+$/i, message: 'Geçerli e-posta giriniz' } }
 }

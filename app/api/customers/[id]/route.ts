@@ -51,9 +51,9 @@ export async function PUT(
     const body = await request.json()
     
     // Validation
-    if (!body.companyName || !body.contactName) {
+    if (!body.contactName) {
       return NextResponse.json(
-        { error: 'Şirket adı ve iletişim kişisi gereklidir' },
+        { error: 'İletişim kişisi gereklidir' },
         { status: 400 }
       )
     }

@@ -90,7 +90,7 @@ export default function CustomerDetailPage() {
   const handleDelete = async () => {
     if (!customer) return
     
-    if (!confirm(`"${customer.companyName}" müşterisini silmek istediğinizden emin misiniz?`)) return
+    if (!confirm(`"${customer.companyName || customer.contactName}" müşterisini silmek istediğinizden emin misiniz?`)) return
 
     try {
       const response = await fetch(`/api/customers/${customerId}`, {
@@ -180,7 +180,7 @@ export default function CustomerDetailPage() {
             </Link>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{customer.companyName}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{customer.companyName || customer.contactName}</h1>
             <p className="text-muted-foreground">
               Müşteri Detayları
             </p>
@@ -219,7 +219,7 @@ export default function CustomerDetailPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Şirket Adı</div>
-                  <div className="text-lg font-semibold">{customer.companyName}</div>
+                  <div className="text-lg font-semibold">{customer.companyName || '-'}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">İletişim Kişisi</div>

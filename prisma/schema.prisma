@@ -72,7 +72,7 @@ enum QuotationStatus {
 // Müşteri modeli
 model Customer {
   id          String         @id @default(cuid())
-  companyName String         @map("company_name") // Şirket adı
+  companyName String?        @map("company_name") // Şirket adı
   contactName String         @map("contact_name") // İletişim kişisi
   email       String?        @unique
   phone       String?

@@ -150,7 +150,7 @@ export function CustomerTable({
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{customer.companyName}</span>
+                  <span className="font-medium">{customer.companyName || customer.contactName}</span>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {customer.contactName}

@@ -48,10 +48,6 @@ export function CreateCustomerModal({ onCustomerCreated }: CreateCustomerModalPr
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Şirket adı gereklidir'
-    }
-
     if (!formData.contactName.trim()) {
       newErrors.contactName = 'İletişim kişisi gereklidir'
     }
@@ -160,7 +156,7 @@ export function CreateCustomerModal({ onCustomerCreated }: CreateCustomerModalPr
           
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="companyName">Şirket Adı *</Label>
+              <Label htmlFor="companyName">Şirket Adı</Label>
               <Input
                 id="companyName"
                 value={formData.companyName}

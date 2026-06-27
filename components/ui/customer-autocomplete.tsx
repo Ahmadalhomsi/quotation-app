@@ -39,8 +39,8 @@ export function CustomerAutocomplete({
 }: CustomerAutocompleteProps) {
   const options: ComboboxOption[] = customers.map((customer) => ({
     value: customer.id,
-    label: customer.companyName,
-    searchableText: `${customer.companyName} ${customer.contactName} ${customer.email || ''}`.toLocaleLowerCase('tr-TR'),
+    label: customer.companyName || customer.contactName,
+    searchableText: `${customer.companyName || ''} ${customer.contactName} ${customer.email || ''}`.toLocaleLowerCase('tr-TR'),
   }))
 
   return (
@@ -98,7 +98,7 @@ export function CustomerDisplay({ customer, className }: CustomerDisplayProps) {
     <div className={cn("flex items-center gap-2 p-3 bg-muted/50 rounded-md", className)}>
       <Building2 className="h-4 w-4 text-muted-foreground" />
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{customer.companyName}</p>
+        <p className="font-medium truncate">{customer.companyName || customer.contactName}</p>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
             <User className="h-3 w-3" />

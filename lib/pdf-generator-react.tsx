@@ -688,8 +688,8 @@ export class ReactPdfGenerator {
     let finalFilename = filename
     if (!finalFilename) {
       const customerName = sanitizeFilename(data.quotation.customer.contactName)
-      const companyName = sanitizeFilename(data.quotation.customer.companyName)
-      finalFilename = `${customerName}_${companyName}.pdf`
+      const companyName = data.quotation.customer.companyName ? sanitizeFilename(data.quotation.customer.companyName) : null
+      finalFilename = companyName ? `${customerName}_${companyName}.pdf` : `${customerName}.pdf`
     }
     
     // Create download link
@@ -746,8 +746,8 @@ export async function generatePDF(quotationData: PdfExportData['quotation']): Pr
   
   // Create filename with customer name and company name
   const customerName = sanitizeFilename(quotationData.customer.contactName)
-  const companyName = sanitizeFilename(quotationData.customer.companyName)
-  const filename = `${customerName}_${companyName}.pdf`
+  const companyName = quotationData.customer.companyName ? sanitizeFilename(quotationData.customer.companyName) : null
+  const filename = companyName ? `${customerName}_${companyName}.pdf` : `${customerName}.pdf`
   
   await ReactPdfGenerator.downloadQuotationPdf(data, filename)
 }

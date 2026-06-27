@@ -32,10 +32,6 @@ export default function NewCustomerPage() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Şirket adı gereklidir'
-    }
-
     if (!formData.contactName.trim()) {
       newErrors.contactName = 'İletişim kişisi gereklidir'
     }
