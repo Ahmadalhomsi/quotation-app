@@ -85,6 +85,7 @@ interface QuotationDetail {
   status: QuotationStatus
   totalTL: number
   totalUSD: number
+  totalDiscount: number
   exchangeRate: number
   validUntil: string
   createdAt: string
@@ -704,9 +705,26 @@ export default function QuotationDetailPage() {
                             {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
                         </span>
                         <span className="font-mono font-bold text-lg">
-                            {formatPrice(quotation.totalTL || 0, 'TL')}
+                            {formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)), 'TL')}
                         </span>
                     </div>
+                    {quotation.totalDiscount > 0 && (
+                        <>
+                            <div className="flex justify-between text-green-600">
+                                <span className="text-sm font-medium">İskonto ({Number(quotation.totalDiscount).toFixed(2)}%):</span>
+                                <span className="font-mono font-medium">
+                                    -{formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100), 'TL')}
+                                </span>
+                            </div>
+                            <Separator className="my-2" />
+                            <div className="flex justify-between">
+                                <span className="text-sm font-medium text-green-700">Son Tutar (TL):</span>
+                                <span className="font-mono font-bold text-lg text-green-700">
+                                    {formatPrice(quotation.totalTL || 0, 'TL')}
+                                </span>
+                            </div>
+                        </>
+                    )}
                   </>
                 )}
                 
@@ -733,10 +751,27 @@ export default function QuotationDetailPage() {
                             <span className="text-sm text-muted-foreground">
                                 {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
                             </span>
-                            <span className="font-mono text-lg">
-                                {formatPrice(quotation.totalUSD || 0, 'USD')}
+                            <span className="font-mono font-bold text-lg">
+                                {formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)), 'USD')}
                             </span>
                         </div>
+                        {quotation.totalDiscount > 0 && (
+                            <>
+                                <div className="flex justify-between text-green-600">
+                                    <span className="text-sm font-medium">İskonto ({Number(quotation.totalDiscount).toFixed(2)}%):</span>
+                                    <span className="font-mono font-medium">
+                                        -{formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100), 'USD')}
+                                    </span>
+                                </div>
+                                <Separator className="my-2" />
+                                <div className="flex justify-between">
+                                    <span className="text-sm font-medium text-green-700">Son Tutar (USD):</span>
+                                    <span className="font-mono font-bold text-lg text-green-700">
+                                        {formatPrice(quotation.totalUSD || 0, 'USD')}
+                                    </span>
+                                </div>
+                            </>
+                        )}
                     </>
                 )}
                 

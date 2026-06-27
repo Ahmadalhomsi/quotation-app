@@ -555,16 +555,56 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
                 </Text>
-                <Text style={styles.totalsValue}>{formatPrice(quotation.totalTL || 0)} TL</Text>
+                <Text style={styles.totalsValue}>{formatPrice(subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0))} TL</Text>
               </View>
+            )}
+            {(quotation.totalDiscount || 0) > 0 && (
+              <>
+                <View style={styles.totalsRow}>
+                  <Text style={[styles.totalsLabel, { color: '#16A34A' }]}>
+                    İskonto (%{Number(quotation.totalDiscount).toFixed(2)}):
+                  </Text>
+                  <Text style={[styles.totalsValue, { color: '#16A34A' }]}>
+                    -{formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100))} TL
+                  </Text>
+                </View>
+                <View style={styles.totalsRow}>
+                  <Text style={[styles.totalsLabel, { fontWeight: 'bold', fontSize: 11 }]}>
+                    Son Tutar (TL):
+                  </Text>
+                  <Text style={[styles.totalsValue, { fontWeight: 'bold', fontSize: 11 }]}>
+                    {formatPrice(quotation.totalTL || 0)} TL
+                  </Text>
+                </View>
+              </>
             )}
             {(quotation.totalUSD || 0) > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
                   {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
                 </Text>
-                <Text style={styles.totalsValue}>${formatPrice(quotation.totalUSD || 0)}</Text>
+                <Text style={styles.totalsValue}>${formatPrice(subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0))}</Text>
               </View>
+            )}
+            {(quotation.totalDiscount || 0) > 0 && (quotation.totalUSD || 0) > 0 && (
+              <>
+                <View style={styles.totalsRow}>
+                  <Text style={[styles.totalsLabel, { color: '#16A34A' }]}>
+                    İskonto (%{Number(quotation.totalDiscount).toFixed(2)}):
+                  </Text>
+                  <Text style={[styles.totalsValue, { color: '#16A34A' }]}>
+                    -${formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100))}
+                  </Text>
+                </View>
+                <View style={styles.totalsRow}>
+                  <Text style={[styles.totalsLabel, { fontWeight: 'bold', fontSize: 11 }]}>
+                    Son Tutar (USD):
+                  </Text>
+                  <Text style={[styles.totalsValue, { fontWeight: 'bold', fontSize: 11 }]}>
+                    ${formatPrice(quotation.totalUSD || 0)}
+                  </Text>
+                </View>
+              </>
             )}
             
             {/* KDV Warning if disabled */}
