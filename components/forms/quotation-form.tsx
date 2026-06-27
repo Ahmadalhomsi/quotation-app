@@ -273,6 +273,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
     const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
     const [showProductKdv, setShowProductKdv] = useState<boolean>(initialShowProductKdv)
+    const [hedefTutar, setHedefTutar] = useState<string>('')
 
     const [formData, setFormData] = useState<CreateQuotationData>({
         title: initialData.title || 'Teklif',
@@ -567,6 +568,8 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             totalUSD: totals.totalUSD * discountMultiplier,
             subtotalTL: totals.subtotalTL,
             subtotalUSD: totals.subtotalUSD,
+            preDiscountTotalTL: totals.totalTL,
+            preDiscountTotalUSD: totals.totalUSD,
             kdvAmountTL: totals.kdvAmountTL * discountMultiplier,
             kdvAmountUSD: totals.kdvAmountUSD * discountMultiplier,
             discountAmountTL: totals.totalTL * (totalDiscount / 100),
@@ -971,6 +974,34 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             {totals.totalTL > 0 && (
                                 <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                     <h4 className="font-semibold text-lg">Türk Lirası (₺)</h4>
+
+                                    <div className="space-y-2">
+                                        <Label>Hedef Tutar</Label>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm">₺</span>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={hedefTutar}
+                                                onChange={(e) => {
+                                                    const val = e.target.value
+                                                    setHedefTutar(val)
+                                                    const target = parseFloat(val) || 0
+                                                    const preDiscountTotal = totals.preDiscountTotalTL
+                                                    if (preDiscountTotal > 0 && target > 0) {
+                                                        const newDiscount = Math.round(Math.max(0, Math.min(100, ((preDiscountTotal - target) / preDiscountTotal) * 100)) * 100) / 100
+                                                        setTotalDiscount(newDiscount)
+                                                    } else if (!val || target === 0) {
+                                                        setTotalDiscount(0)
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                                                placeholder="İskontolu toplam tutar"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {kdvEnabled && (
                                         <>
                                             <div className="flex justify-between">
@@ -988,8 +1019,21 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                     )}
                                     <div className="flex justify-between font-bold text-lg">
                                         <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
-                                        <span>₺{totals.totalTL.toFixed(2)}</span>
+                                        <span>₺{totals.preDiscountTotalTL.toFixed(2)}</span>
                                     </div>
+                                    {totalDiscount > 0 && (
+                                        <>
+                                            <div className="flex justify-between text-green-600 font-medium">
+                                                <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
+                                                <span>-₺{totals.discountAmountTL.toFixed(2)}</span>
+                                            </div>
+                                            <hr />
+                                            <div className="flex justify-between font-bold text-lg text-green-700">
+                                                <span>Son Tutar:</span>
+                                                <span>₺{totals.totalTL.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    )}
                                     {!kdvEnabled && (
                                         <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
                                     )}
@@ -1000,6 +1044,34 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             {totals.totalUSD > 0 && (
                                 <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                     <h4 className="font-semibold text-lg">Amerikan Doları ($)</h4>
+
+                                    <div className="space-y-2">
+                                        <Label>Hedef Tutar</Label>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm">$</span>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                value={hedefTutar}
+                                                onChange={(e) => {
+                                                    const val = e.target.value
+                                                    setHedefTutar(val)
+                                                    const target = parseFloat(val) || 0
+                                                    const preDiscountTotal = totals.preDiscountTotalUSD
+                                                    if (preDiscountTotal > 0 && target > 0) {
+                                                        const newDiscount = Math.round(Math.max(0, Math.min(100, ((preDiscountTotal - target) / preDiscountTotal) * 100)) * 100) / 100
+                                                        setTotalDiscount(newDiscount)
+                                                    } else if (!val || target === 0) {
+                                                        setTotalDiscount(0)
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                                                placeholder="İskontolu toplam tutar"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {kdvEnabled && (
                                         <>
                                             <div className="flex justify-between">
@@ -1017,8 +1089,21 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                     )}
                                     <div className="flex justify-between font-bold text-lg">
                                         <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
-                                        <span>${totals.totalUSD.toFixed(2)}</span>
+                                        <span>${totals.preDiscountTotalUSD.toFixed(2)}</span>
                                     </div>
+                                    {totalDiscount > 0 && (
+                                        <>
+                                            <div className="flex justify-between text-green-600 font-medium">
+                                                <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
+                                                <span>-${totals.discountAmountUSD.toFixed(2)}</span>
+                                            </div>
+                                            <hr />
+                                            <div className="flex justify-between font-bold text-lg text-green-700">
+                                                <span>Son Tutar:</span>
+                                                <span>${totals.totalUSD.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    )}
                                     {!kdvEnabled && (
                                         <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
                                     )}
