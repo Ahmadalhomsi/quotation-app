@@ -129,7 +129,7 @@ export default function NewQuotationPage() {
             title: cloneQuotation.title,
             description: cloneQuotation.description || '',
             customerId: cloneQuotation.customerId,
-            validUntil: new Date(cloneQuotation.validUntil),
+            validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             terms: cloneQuotation.terms || '',
             notes: cloneQuotation.notes || '',
             items: []
