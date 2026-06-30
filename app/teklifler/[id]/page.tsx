@@ -713,14 +713,14 @@ export default function QuotationDetailPage() {
                             <div className="flex justify-between text-green-600">
                                 <span className="text-sm font-medium">İskonto ({Number(quotation.totalDiscount).toFixed(2)}%):</span>
                                 <span className="font-mono font-medium">
-                                    -{formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100), 'TL')}
+                                    -{formatPrice(Math.round((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100)), 'TL')}
                                 </span>
                             </div>
                             <Separator className="my-2" />
                             <div className="flex justify-between">
                                 <span className="text-sm font-medium text-green-700">Son Tutar (TL):</span>
                                 <span className="font-mono font-bold text-lg text-green-700">
-                                    {formatPrice(quotation.totalTL || 0, 'TL')}
+                                    {formatPrice(Math.round(quotation.totalTL || 0), 'TL')}
                                 </span>
                             </div>
                         </>
@@ -760,14 +760,14 @@ export default function QuotationDetailPage() {
                                 <div className="flex justify-between text-green-600">
                                     <span className="text-sm font-medium">İskonto ({Number(quotation.totalDiscount).toFixed(2)}%):</span>
                                     <span className="font-mono font-medium">
-                                        -{formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100), 'USD')}
+                                        -{formatPrice(Math.round((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100)), 'USD')}
                                     </span>
                                 </div>
                                 <Separator className="my-2" />
                                 <div className="flex justify-between">
                                     <span className="text-sm font-medium text-green-700">Son Tutar (USD):</span>
                                     <span className="font-mono font-bold text-lg text-green-700">
-                                        {formatPrice(quotation.totalUSD || 0, 'USD')}
+                                        {formatPrice(Math.round(quotation.totalUSD || 0), 'USD')}
                                     </span>
                                 </div>
                             </>

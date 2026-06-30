@@ -565,7 +565,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                     İskonto (%{Number(quotation.totalDiscount).toFixed(2)}):
                   </Text>
                   <Text style={[styles.totalsValue, { color: '#16A34A' }]}>
-                    -{formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100))} TL
+                    -{formatPrice(Math.round((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100)))} TL
                   </Text>
                 </View>
                 <View style={styles.totalsRow}>
@@ -573,7 +573,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                     Son Tutar (TL):
                   </Text>
                   <Text style={[styles.totalsValue, { fontWeight: 'bold', fontSize: 11 }]}>
-                    {formatPrice(quotation.totalTL || 0)} TL
+                    {formatPrice(Math.round(quotation.totalTL || 0))} TL
                   </Text>
                 </View>
               </>
@@ -593,7 +593,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                     İskonto (%{Number(quotation.totalDiscount).toFixed(2)}):
                   </Text>
                   <Text style={[styles.totalsValue, { color: '#16A34A' }]}>
-                    -${formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100))}
+                    -${formatPrice(Math.round((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)) * (Number(quotation.totalDiscount) / 100)))}
                   </Text>
                 </View>
                 <View style={styles.totalsRow}>
@@ -601,7 +601,7 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                     Son Tutar (USD):
                   </Text>
                   <Text style={[styles.totalsValue, { fontWeight: 'bold', fontSize: 11 }]}>
-                    ${formatPrice(quotation.totalUSD || 0)}
+                    ${formatPrice(Math.round(quotation.totalUSD || 0))}
                   </Text>
                 </View>
               </>

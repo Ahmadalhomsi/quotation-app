@@ -273,7 +273,8 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
     const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
     const [showProductKdv, setShowProductKdv] = useState<boolean>(initialShowProductKdv)
-    const [hedefTutar, setHedefTutar] = useState<string>('')
+    const [sonTutarTL, setSonTutarTL] = useState<string>('')
+    const [sonTutarUSD, setSonTutarUSD] = useState<string>('')
 
     const [formData, setFormData] = useState<CreateQuotationData>({
         title: initialData.title || 'Teklif',
@@ -295,6 +296,18 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     })
     
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
+
+    // Sync sonTutar when totalDiscount changes from elsewhere (e.g., iskonto field)
+    useEffect(() => {
+        const t = calculateTotals()
+        if (t.preDiscountTotalTL > 0) {
+            setSonTutarTL(String(Math.round(t.totalTL)))
+        }
+        if (t.preDiscountTotalUSD > 0) {
+            setSonTutarUSD(String(Math.round(t.totalUSD)))
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [totalDiscount, items, kdvEnabled])
 
     const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -975,33 +988,6 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                     <h4 className="font-semibold text-lg">Türk Lirası (₺)</h4>
 
-                                    <div className="space-y-2">
-                                        <Label>Hedef Tutar</Label>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm">₺</span>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={hedefTutar}
-                                                onChange={(e) => {
-                                                    const val = e.target.value
-                                                    setHedefTutar(val)
-                                                    const target = parseFloat(val) || 0
-                                                    const preDiscountTotal = totals.preDiscountTotalTL
-                                                    if (preDiscountTotal > 0 && target > 0) {
-                                                        const newDiscount = Math.round(Math.max(0, Math.min(100, ((preDiscountTotal - target) / preDiscountTotal) * 100)) * 100) / 100
-                                                        setTotalDiscount(newDiscount)
-                                                    } else if (!val || target === 0) {
-                                                        setTotalDiscount(0)
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-                                                placeholder="İskontolu toplam tutar"
-                                            />
-                                        </div>
-                                    </div>
-
                                     {kdvEnabled && (
                                         <>
                                             <div className="flex justify-between">
@@ -1021,18 +1007,40 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
                                         <span>₺{totals.preDiscountTotalTL.toFixed(2)}</span>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Son Tutar</Label>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm">₺</span>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                value={sonTutarTL || Math.round(totals.totalTL)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value
+                                                    setSonTutarTL(val)
+                                                    const target = parseFloat(val) || 0
+                                                    const pre = totals.preDiscountTotalTL
+                                                    if (pre > 0 && target > 0 && target < pre) {
+                                                        setTotalDiscount(Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100)
+                                                    } else if (target >= pre) {
+                                                        setTotalDiscount(0)
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') e.preventDefault()
+                                                }}
+                                                placeholder="Son tutar"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {totalDiscount > 0 && (
-                                        <>
-                                            <div className="flex justify-between text-green-600 font-medium">
-                                                <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
-                                                <span>-₺{totals.discountAmountTL.toFixed(2)}</span>
-                                            </div>
-                                            <hr />
-                                            <div className="flex justify-between font-bold text-lg text-green-700">
-                                                <span>Son Tutar:</span>
-                                                <span>₺{totals.totalTL.toFixed(2)}</span>
-                                            </div>
-                                        </>
+                                        <div className="flex justify-between text-green-600 font-medium">
+                                            <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
+                                            <span>-₺{Math.round(totals.preDiscountTotalTL - (parseFloat(sonTutarTL) || totals.totalTL)).toLocaleString('tr-TR')}</span>
+                                        </div>
                                     )}
                                     {!kdvEnabled && (
                                         <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
@@ -1044,33 +1052,6 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                             {totals.totalUSD > 0 && (
                                 <div className="space-y-2 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                     <h4 className="font-semibold text-lg">Amerikan Doları ($)</h4>
-
-                                    <div className="space-y-2">
-                                        <Label>Hedef Tutar</Label>
-                                        <div className="flex items-center gap-1">
-                                            <span className="text-sm">$</span>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={hedefTutar}
-                                                onChange={(e) => {
-                                                    const val = e.target.value
-                                                    setHedefTutar(val)
-                                                    const target = parseFloat(val) || 0
-                                                    const preDiscountTotal = totals.preDiscountTotalUSD
-                                                    if (preDiscountTotal > 0 && target > 0) {
-                                                        const newDiscount = Math.round(Math.max(0, Math.min(100, ((preDiscountTotal - target) / preDiscountTotal) * 100)) * 100) / 100
-                                                        setTotalDiscount(newDiscount)
-                                                    } else if (!val || target === 0) {
-                                                        setTotalDiscount(0)
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
-                                                placeholder="İskontolu toplam tutar"
-                                            />
-                                        </div>
-                                    </div>
 
                                     {kdvEnabled && (
                                         <>
@@ -1091,18 +1072,40 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
                                         <span>${totals.preDiscountTotalUSD.toFixed(2)}</span>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Son Tutar</Label>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-sm">$</span>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                step="1"
+                                                value={sonTutarUSD || Math.round(totals.totalUSD)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value
+                                                    setSonTutarUSD(val)
+                                                    const target = parseFloat(val) || 0
+                                                    const pre = totals.preDiscountTotalUSD
+                                                    if (pre > 0 && target > 0 && target < pre) {
+                                                        setTotalDiscount(Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100)
+                                                    } else if (target >= pre) {
+                                                        setTotalDiscount(0)
+                                                    }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') e.preventDefault()
+                                                }}
+                                                placeholder="Son tutar"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {totalDiscount > 0 && (
-                                        <>
-                                            <div className="flex justify-between text-green-600 font-medium">
-                                                <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
-                                                <span>-${totals.discountAmountUSD.toFixed(2)}</span>
-                                            </div>
-                                            <hr />
-                                            <div className="flex justify-between font-bold text-lg text-green-700">
-                                                <span>Son Tutar:</span>
-                                                <span>${totals.totalUSD.toFixed(2)}</span>
-                                            </div>
-                                        </>
+                                        <div className="flex justify-between text-green-600 font-medium">
+                                            <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
+                                            <span>-${Math.round(totals.preDiscountTotalUSD - (parseFloat(sonTutarUSD) || totals.totalUSD)).toLocaleString('tr-TR')}</span>
+                                        </div>
                                     )}
                                     {!kdvEnabled && (
                                         <p className="text-sm text-red-600 font-medium">⚠️ KDV dahil değildir</p>
