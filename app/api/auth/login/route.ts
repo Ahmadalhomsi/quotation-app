@@ -3,6 +3,10 @@ import bcrypt from 'bcryptjs'
 import { rateLimiter } from '@/lib/rate-limiter'
 import { getClientIP } from '@/lib/ip-utils'
 
+// Hash password once at startup (not on every request)
+const authPassword = process.env.AUTH_PASSWORD
+const AUTH_PASSWORD_HASH = authPassword ? bcrypt.hashSync(authPassword, 12) : null
+
 export async function POST(request: NextRequest) {
     try {
         // Get client IP for rate limiting
@@ -35,9 +39,8 @@ export async function POST(request: NextRequest) {
 
         // Get credentials from environment
         const authUsername = process.env.AUTH_USERNAME
-        const authPasswordHash = "$2b$12$n7de3rVyG0vCXcYFf0AgKe7bywMMZQjV06bSYd42CDu4Sr3hYiQJK"
 
-        if (!authUsername || !authPasswordHash) {
+        if (!authUsername || !AUTH_PASSWORD_HASH) {
             return NextResponse.json(
                 { error: 'Sunucu yapılandırma hatası' },
                 { status: 500 }
@@ -61,7 +64,7 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        const passwordMatch = await bcrypt.compare(password, authPasswordHash)
+        const passwordMatch = await bcrypt.compare(password, AUTH_PASSWORD_HASH)
         if (!passwordMatch) {
             return NextResponse.json(
                 { error: 'Geçersiz kullanıcı adı veya şifre' },
