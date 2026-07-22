@@ -16,7 +16,8 @@ import {
   Trash2,
   Phone,
   Loader2,
-  Copy
+  Copy,
+  MessageSquare
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -29,6 +30,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -105,6 +115,38 @@ export default function QuotationsPage() {
   const [appliedSearch, setAppliedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
+  const [noteDialogId, setNoteDialogId] = useState<string | null>(null)
+  const [noteText, setNoteText] = useState('')
+  const [savingNote, setSavingNote] = useState(false)
+
+  const openNoteDialog = (quotation: any) => {
+    setNoteText(quotation.notes || '')
+    setNoteDialogId(quotation.id)
+  }
+
+  const handleSaveNote = async () => {
+    if (!noteDialogId) return
+    setSavingNote(true)
+    try {
+      const response = await fetch(`/api/quotations/${noteDialogId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: noteText }),
+      })
+      if (response.ok) {
+        toast.success('Not kaydedildi')
+        setNoteDialogId(null)
+        setNoteText('')
+        fetchQuotations(currentPage, appliedSearch, statusFilter)
+      } else {
+        toast.error('Not kaydedilemedi')
+      }
+    } catch {
+      toast.error('Not kaydedilemedi')
+    } finally {
+      setSavingNote(false)
+    }
+  }
   // Track call status for each quotation (using local state for now)
   const [callStatuses, setCallStatuses] = useState<Record<string, CallStatus>>({})
 
@@ -359,6 +401,7 @@ export default function QuotationsPage() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Başlık */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -549,6 +592,12 @@ export default function QuotationsPage() {
                             <div className="text-sm text-muted-foreground">
                               {quotation.title}
                             </div>
+                            {quotation.notes && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1.5 border-t pt-1 max-w-[200px]">
+                                <MessageSquare className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{quotation.notes}</span>
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -658,6 +707,14 @@ export default function QuotationsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              onClick={() => openNoteDialog(quotation)}
+                              title="Not"
+                            >
+                              <MessageSquare className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
                               title="Sil"
                               className="text-red-600 hover:text-red-800 hover:bg-red-50"
@@ -690,6 +747,12 @@ export default function QuotationsPage() {
                             <div className="text-sm text-muted-foreground truncate">
                               {quotation.title}
                             </div>
+                            {quotation.notes && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 border-t pt-1">
+                                <MessageSquare className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{quotation.notes}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-col items-end gap-1 shrink-0">
                             <Badge className={`${getStatusBadgeClass(quotation.status as QuotationStatus)} shrink-0`}>
@@ -819,6 +882,15 @@ export default function QuotationsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => openNoteDialog(quotation)}
+                            title="Not"
+                            className="h-9 w-9"
+                          >
+                            <MessageSquare className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDeleteQuotation(quotation.id, quotation.quotationNumber)}
                             title="Sil"
                             className="h-9 w-9 text-red-600 hover:text-red-800 hover:bg-red-50"
@@ -884,5 +956,30 @@ export default function QuotationsPage() {
         </CardContent>
       </Card>
     </div>
+
+      {/* Not Düzenleme Dialog */}
+      <Dialog open={!!noteDialogId} onOpenChange={(open) => !open && setNoteDialogId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Teklif Notu</DialogTitle>
+            <DialogDescription>
+              Müşteri ile son görüşme, geri dönüş, teklif durumu vb. notlar
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            className="min-h-[150px]"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Notunuzu yazın..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogId(null)}>İptal</Button>
+            <Button onClick={handleSaveNote} disabled={savingNote}>
+              {savingNote ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

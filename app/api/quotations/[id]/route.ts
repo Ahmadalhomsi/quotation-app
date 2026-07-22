@@ -231,3 +231,34 @@ export async function PUT(
     )
   }
 }
+
+// PATCH /api/quotations/[id] - Teklif notlarını güncelle
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const resolvedParams = await params
+    const body = await request.json()
+
+    if (body.notes === undefined) {
+      return NextResponse.json(
+        { error: 'Not alanı gereklidir' },
+        { status: 400 }
+      )
+    }
+
+    const updated = await prisma.quotation.update({
+      where: { id: resolvedParams.id },
+      data: { notes: body.notes },
+    })
+
+    return NextResponse.json({ quotation: updated })
+  } catch (error) {
+    console.error('Not güncellenirken hata:', error)
+    return NextResponse.json(
+      { error: 'Not güncellenemedi' },
+      { status: 500 }
+    )
+  }
+}
