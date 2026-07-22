@@ -1,42 +1,41 @@
 # Use a newer Node.js version to satisfy pdfjs-dist requirements (>=20.16.0)
 FROM node:20.18-alpine AS base
 
-# Set pnpm home and path
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
-# Install pnpm manually and FORCE it to overwrite the corepack symlinks
+# Install pnpm globally
 RUN npm install -g pnpm@9.15.4 --force
+
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # --- Dependencies stage ---
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy lockfile and manifest
-COPY package.json pnpm-lock.yaml* ./
+# Copy lockfile and manifest first (layer cached until these change)
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies
-RUN pnpm i --frozen-lockfile
+# Install with cache mount for faster rebuilds
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm i --frozen-lockfile
 
-# 2. Rebuild the source code only when needed
+# --- Builder stage ---
 FROM base AS builder
 WORKDIR /app
 
+# Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
 
-# Disable Next.js telemetry
-ENV NEXT_TELEMETRY_DISABLED=1
-
-
-# Generate Prisma Client
+# Copy Prisma schema separately (changes less frequently than source code)
+COPY prisma ./prisma
 RUN pnpm prisma generate
+
+# Copy the rest of the application source
+COPY . .
 
 # Build the application
 RUN pnpm run build
 
-# 3. Production image
+# --- Production stage ---
 FROM base AS runner
 WORKDIR /app
 
@@ -46,20 +45,23 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN apk add --no-cache curl
 
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Copy standalone build files (this includes most necessary node_modules)
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/prisma ./prisma
+# Copy standalone build output
+COPY --from=builder --link /app/public ./public
+COPY --from=builder --link /app/.next/standalone ./
+COPY --from=builder --link /app/.next/static ./.next/static
+COPY --from=builder --link /app/prisma ./prisma
 
-# Change ownership to the non-root user
+# Remove build cache (not needed at runtime)
+RUN rm -rf .next/cache
+
+# Change ownership
 RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
