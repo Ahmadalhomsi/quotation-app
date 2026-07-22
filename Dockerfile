@@ -25,7 +25,8 @@ WORKDIR /app
 # Copy node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy Prisma schema separately (changes less frequently than source code)
+# Copy package.json and Prisma schema for prisma generate
+COPY package.json ./
 COPY prisma ./prisma
 RUN pnpm prisma generate
 
@@ -49,10 +50,10 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy standalone build output
-COPY --from=builder --link /app/public ./public
-COPY --from=builder --link /app/.next/standalone ./
-COPY --from=builder --link /app/.next/static ./.next/static
-COPY --from=builder --link /app/prisma ./prisma
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
 
 # Remove build cache (not needed at runtime)
 RUN rm -rf .next/cache
