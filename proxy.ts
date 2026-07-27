@@ -47,7 +47,7 @@ function isAuthenticated(request: NextRequest): boolean {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Skip middleware for paths that don't require auth
