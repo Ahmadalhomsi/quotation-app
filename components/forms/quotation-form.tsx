@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Calculator, GripVertical } from 'lucide-react'
+import { Plus, Trash2, Calculator, GripVertical, Check } from 'lucide-react'
 import {
     DndContext,
     closestCenter,
@@ -273,8 +273,14 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const [kdvRate, setKdvRate] = useState<number>(initialKdvRate)
     const [totalDiscount, setTotalDiscount] = useState<number>(initialTotalDiscount)
     const [showProductKdv, setShowProductKdv] = useState<boolean>(initialShowProductKdv)
-    const [sonTutarTL, setSonTutarTL] = useState<string>('')
-    const [sonTutarUSD, setSonTutarUSD] = useState<string>('')
+    // Draft values for "Son Tutar" inputs. They are ONLY committed to
+    // totalDiscount via the "Uygula" button (or Enter). While typing, nothing
+    // else is allowed to overwrite these inputs.
+    const [sonTutarTLDraft, setSonTutarTLDraft] = useState<string>('')
+    const [sonTutarUSDDraft, setSonTutarUSDDraft] = useState<string>('')
+    // Which Son Tutar input is currently being edited (prevents the computed
+    // fallback from repopulating the field while the user clears/edits it)
+    const [sonTutarFocused, setSonTutarFocused] = useState<'TL' | 'USD' | null>(null)
 
     const [formData, setFormData] = useState<CreateQuotationData>({
         title: initialData.title || 'Teklif',
@@ -296,18 +302,6 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     })
     
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
-
-    // Sync sonTutar when totalDiscount changes from elsewhere (e.g., iskonto field)
-    useEffect(() => {
-        const t = calculateTotals()
-        if (t.preDiscountTotalTL > 0) {
-            setSonTutarTL(String(Math.round(t.totalTL)))
-        }
-        if (t.preDiscountTotalUSD > 0) {
-            setSonTutarUSD(String(Math.round(t.totalUSD)))
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [totalDiscount, items, kdvEnabled])
 
     const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -589,6 +583,38 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             discountAmountUSD: totals.totalUSD * (totalDiscount / 100),
             breakdownTL: finalBreakdownTL,
             breakdownUSD: finalBreakdownUSD
+        }
+    }
+
+    /**
+     * Commits a typed "Son Tutar" (final amount) by back-calculating the
+     * total discount percentage. Called explicitly via the "Uygula" button
+     * or the Enter key — never while the user is still typing.
+     */
+    const applySonTutar = (currency: 'TL' | 'USD') => {
+        const draft = currency === 'TL' ? sonTutarTLDraft : sonTutarUSDDraft
+        const setDraft = currency === 'TL' ? setSonTutarTLDraft : setSonTutarUSDDraft
+
+        const target = parseFloat(draft)
+        if (draft === '' || !Number.isFinite(target) || target < 0) {
+            setDraft('')
+            return
+        }
+
+        const { preDiscountTotalTL, preDiscountTotalUSD } = calculateTotals()
+        const pre = currency === 'TL' ? preDiscountTotalTL : preDiscountTotalUSD
+        if (pre > 0) {
+            let discount = 0
+            if (target < pre) {
+                // Round to 2 decimals: DB column is Decimal(5,2)
+                discount = Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100
+            }
+            setTotalDiscount(discount)
+            // Show the normalized total (exactly what will be saved / printed)
+            // in case the 2-decimal discount rounds slightly off the typed value
+            setDraft(String(Math.round(pre * (1 - discount / 100))))
+        } else {
+            setDraft('')
         }
     }
 
@@ -1016,30 +1042,49 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                                 type="number"
                                                 min="0"
                                                 step="1"
-                                                value={sonTutarTL || Math.round(totals.totalTL)}
-                                                onChange={(e) => {
-                                                    const val = e.target.value
-                                                    setSonTutarTL(val)
-                                                    const target = parseFloat(val) || 0
-                                                    const pre = totals.preDiscountTotalTL
-                                                    if (pre > 0 && target > 0 && target < pre) {
-                                                        setTotalDiscount(Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100)
-                                                    } else if (target >= pre) {
-                                                        setTotalDiscount(0)
+                                                value={sonTutarFocused === 'TL' || sonTutarTLDraft !== '' ? sonTutarTLDraft : String(Math.round(totals.totalTL))}
+                                                onFocus={() => {
+                                                    setSonTutarFocused('TL')
+                                                    // Seed the draft with the current computed total so the
+                                                    // user edits a concrete value and can clear it freely
+                                                    setSonTutarTLDraft(String(Math.round(totals.totalTL)))
+                                                }}
+                                                onChange={(e) => setSonTutarTLDraft(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault()
+                                                        applySonTutar('TL')
                                                     }
                                                 }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') e.preventDefault()
+                                                onBlur={() => {
+                                                    // Discard unapplied edits and fall back to the computed total
+                                                    setSonTutarTLDraft('')
+                                                    setSonTutarFocused(null)
                                                 }}
                                                 placeholder="Son tutar"
                                             />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 shrink-0"
+                                                disabled={sonTutarTLDraft === ''}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => applySonTutar('TL')}
+                                            >
+                                                <Check className="mr-1 h-4 w-4" />
+                                                Uygula
+                                            </Button>
                                         </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Son tutarı girin ve Uygula'ya basın — iskonto oranı otomatik hesaplanır
+                                        </p>
                                     </div>
 
                                     {totalDiscount > 0 && (
                                         <div className="flex justify-between text-green-600 font-medium">
                                             <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
-                                            <span>-₺{Math.round(totals.preDiscountTotalTL - (parseFloat(sonTutarTL) || totals.totalTL)).toLocaleString('tr-TR')}</span>
+                                            <span>-₺{Math.round(totals.discountAmountTL).toLocaleString('tr-TR')}</span>
                                         </div>
                                     )}
                                     {!kdvEnabled && (
@@ -1081,30 +1126,49 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                                 type="number"
                                                 min="0"
                                                 step="1"
-                                                value={sonTutarUSD || Math.round(totals.totalUSD)}
-                                                onChange={(e) => {
-                                                    const val = e.target.value
-                                                    setSonTutarUSD(val)
-                                                    const target = parseFloat(val) || 0
-                                                    const pre = totals.preDiscountTotalUSD
-                                                    if (pre > 0 && target > 0 && target < pre) {
-                                                        setTotalDiscount(Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100)
-                                                    } else if (target >= pre) {
-                                                        setTotalDiscount(0)
+                                                value={sonTutarFocused === 'USD' || sonTutarUSDDraft !== '' ? sonTutarUSDDraft : String(Math.round(totals.totalUSD))}
+                                                onFocus={() => {
+                                                    setSonTutarFocused('USD')
+                                                    // Seed the draft with the current computed total so the
+                                                    // user edits a concrete value and can clear it freely
+                                                    setSonTutarUSDDraft(String(Math.round(totals.totalUSD)))
+                                                }}
+                                                onChange={(e) => setSonTutarUSDDraft(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault()
+                                                        applySonTutar('USD')
                                                     }
                                                 }}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') e.preventDefault()
+                                                onBlur={() => {
+                                                    // Discard unapplied edits and fall back to the computed total
+                                                    setSonTutarUSDDraft('')
+                                                    setSonTutarFocused(null)
                                                 }}
                                                 placeholder="Son tutar"
                                             />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-8 shrink-0"
+                                                disabled={sonTutarUSDDraft === ''}
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => applySonTutar('USD')}
+                                            >
+                                                <Check className="mr-1 h-4 w-4" />
+                                                Uygula
+                                            </Button>
                                         </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            Son tutarı girin ve Uygula'ya basın — iskonto oranı otomatik hesaplanır
+                                        </p>
                                     </div>
 
                                     {totalDiscount > 0 && (
                                         <div className="flex justify-between text-green-600 font-medium">
                                             <span>İskonto ({totalDiscount.toFixed(2)}%):</span>
-                                            <span>-${Math.round(totals.preDiscountTotalUSD - (parseFloat(sonTutarUSD) || totals.totalUSD)).toLocaleString('tr-TR')}</span>
+                                            <span>-${Math.round(totals.discountAmountUSD).toLocaleString('tr-TR')}</span>
                                         </div>
                                     )}
                                     {!kdvEnabled && (
