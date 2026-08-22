@@ -1,3 +1,8 @@
+# Single-package workspace: include the root package so pnpm recognizes
+# scripts (pnpm run <script>) and workspace semantics correctly.
+packages:
+  - '*'
+
 allowBuilds:
   '@prisma/client': true
   '@prisma/engines': true
