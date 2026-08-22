@@ -160,7 +160,9 @@ model Quotation {
   showProductKdv  Boolean?        @default(true) @map("show_product_kdv") // Ürün bazlı KDV oranlarını göster mi?
   
   // İskonto bilgileri
-  totalDiscount   Decimal?        @default(0) @db.Decimal(5, 2) @map("total_discount") // Toplam iskonto oranı (%)
+  // 6 ondalık basamak: "Son Tutar" hedefine tam oturması için gerekli
+  // (2 basamak, 40000 gibi yuvarlak hedeflerde 39999/40002 sapmasına neden oluyordu)
+  totalDiscount   Decimal?        @default(0) @db.Decimal(9, 6) @map("total_discount") // Toplam iskonto oranı (%)
   
   // Notlar
   terms           String?         // Şartlar ve koşullar

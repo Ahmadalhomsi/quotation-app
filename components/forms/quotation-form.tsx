@@ -606,12 +606,13 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
         if (pre > 0) {
             let discount = 0
             if (target < pre) {
-                // Round to 2 decimals: DB column is Decimal(5,2)
-                discount = Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 100) / 100
+                // Keep 6 decimal places (DB column is Decimal(9,6)) so the
+                // recomputed total lands exactly on the typed target instead
+                // of drifting to e.g. 39999 when the user typed 40000
+                discount = Math.round(Math.max(0, Math.min(100, ((pre - target) / pre) * 100)) * 1e6) / 1e6
             }
             setTotalDiscount(discount)
             // Show the normalized total (exactly what will be saved / printed)
-            // in case the 2-decimal discount rounds slightly off the typed value
             setDraft(String(Math.round(pre * (1 - discount / 100))))
         } else {
             setDraft('')
@@ -817,7 +818,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 type="number"
                                 min="0"
                                 max="100"
-                                step="0.01"
+                                step="0.000001"
                                 value={totalDiscount}
                                 onChange={(e) => setTotalDiscount(Number(e.target.value))}
                                 onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
