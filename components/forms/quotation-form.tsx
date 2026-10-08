@@ -359,15 +359,25 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
         })
     }
 
-    const handleProductCreated = (product: Product) => {
-        onProductCreated(product)
-        // Auto-select the newly created product
+    // Birim Fiyat / Para Birimi only apply when exactly one product is selected.
+    // With several selected, each product keeps its own price and currency.
+    const applyProductSelection = (productIds: string[], lookup: Product[] = products) => {
+        setSelectedProductIds(productIds)
+        const single = productIds.length === 1
+            ? lookup.find(p => p.id === productIds[0])
+            : undefined
         setNewItem(prev => ({
             ...prev,
-            productId: product.id,
-            unitPrice: Number(product.price),
-            currency: product.currency
+            productId: '',
+            unitPrice: single ? Number(single.price) : 0,
+            currency: single ? single.currency : Currency.TL
         }))
+    }
+
+    const handleProductCreated = (product: Product) => {
+        onProductCreated(product)
+        // Auto-select the newly created product alongside any current selection
+        applyProductSelection([...selectedProductIds, product.id], [...products, product])
         // Clear any product-related errors
         setErrors(prev => {
             const newErrors = { ...prev }
@@ -378,15 +388,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
 
     const handleProductSelect = (productId: string | string[]) => {
         if (Array.isArray(productId)) {
-            // Multiple selection
-            setSelectedProductIds(productId)
-            
-            // If switching to multiple products, keep the currency and other settings in newItem
-            // Don't override currency - let user's selection persist
-            if (productId.length > 0 && !newItem.productId) {
-                // If no unit price set yet, could optionally set from first product
-                // but we'll let the user's form values persist
-            }
+            applyProductSelection(productId)
         } else {
             // Single selection (legacy mode)
             // Clear multiple selection
@@ -407,17 +409,18 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
     const addItem = () => {
         // Check if we have multiple products selected
         if (selectedProductIds.length > 0) {
-            // Add multiple products
+            const isSingle = selectedProductIds.length === 1
             const newItems: QuotationItem[] = selectedProductIds.map(productId => {
                 const product = products.find(p => p.id === productId)
                 if (!product) return null
-                
-                // Use the user-selected currency from the form
-                // If user hasn't modified the unit price (it's 0), use the product's price
-                // Otherwise use the user-specified unit price
-                const selectedCurrency = newItem.currency || Currency.TL
-                const selectedUnitPrice = (newItem.unitPrice && newItem.unitPrice > 0) 
-                    ? newItem.unitPrice 
+
+                // A typed price/currency is only meaningful for a single product;
+                // otherwise every product uses its own price and currency
+                const selectedCurrency = isSingle && newItem.currency
+                    ? newItem.currency
+                    : product.currency
+                const selectedUnitPrice = isSingle && newItem.unitPrice && newItem.unitPrice > 0
+                    ? newItem.unitPrice
                     : Number(product.price)
                 
                 const discountMultiplier = 1 - ((newItem.discount || 0) / 100)
@@ -884,7 +887,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                value={newItem.unitPrice}
+                                value={selectedProductIds.length > 1 ? '' : newItem.unitPrice}
                                 onChange={(e) => setNewItem(prev => ({
                                     ...prev,
                                     unitPrice: parseFloat(e.target.value) || 0
@@ -894,6 +897,8 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         e.preventDefault()
                                     }
                                 }}
+                                disabled={selectedProductIds.length > 1}
+                                placeholder={selectedProductIds.length > 1 ? 'Ürün fiyatı' : undefined}
                             />
                         </div>
 
@@ -905,6 +910,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                     ...prev,
                                     currency: value
                                 }))}
+                                disabled={selectedProductIds.length > 1}
                             >
                                 <SelectTrigger>
                                     <SelectValue />
