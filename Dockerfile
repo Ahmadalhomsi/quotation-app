@@ -2,7 +2,7 @@
 FROM node:20.18-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm@9.15.4 --force
+RUN npm install -g pnpm@12.4.1
 
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -12,7 +12,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy lockfile and manifest first (layer cached until these change)
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Install with cache mount for faster rebuilds
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
