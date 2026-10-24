@@ -11,3 +11,8 @@ allowBuilds:
   puppeteer: true
   sharp: true
   unrs-resolver: true
+
+overrides:
+  deepmerge-ts: '>=8.0.0'
+  basic-ftp: '>=6.2.1'
+  zod: '>=4.6.6'
