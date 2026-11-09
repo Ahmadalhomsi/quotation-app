@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     const sku = formData.get('sku') as string
     const isActive = (formData.get('isActive') as string) === 'true'
     const kdvRate = formData.get('kdvRate') ? parseFloat(formData.get('kdvRate') as string) : 20
+    const isYearlyPayment = (formData.get('isYearlyPayment') as string) === 'true'
     const photo = formData.get('photo') as File | null
     
     // Validation
@@ -141,7 +142,8 @@ export async function POST(request: NextRequest) {
       sku: sku && sku.trim() ? sku.trim() : undefined,
       photoUrl: photoUrl || undefined,
       isActive,
-      kdvRate
+      kdvRate,
+      isYearlyPayment
     }
 
     const product = await prisma.product.create({

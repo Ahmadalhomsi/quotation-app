@@ -268,6 +268,25 @@ const styles = StyleSheet.create({
     fontSize: 7,
     color: '#6B7280',
   },
+  yearlyTag: {
+    fontSize: 6,
+    fontWeight: 'bold',
+    color: '#92400E',
+    backgroundColor: '#FEF3C7',
+    paddingVertical: 1,
+    paddingHorizontal: 3,
+    borderRadius: 2,
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  totalsGroupTitle: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#FF6B35',
+    marginTop: 6,
+    marginBottom: 2,
+    letterSpacing: 0.4,
+  },
   footer: {
     position: 'absolute',
     bottom: 20,
@@ -289,38 +308,174 @@ interface QuotationPDFProps {
 }
 
 // Helper to calculate totals and KDV breakdown
+// Items are also split into one-time ("tek seferlik") and yearly ("yıllık") groups
 const calculateBreakdowns = (items: QuotationItem[], kdvEnabled?: boolean) => {
   const breakdownTL: Record<number, number> = {}
   const breakdownUSD: Record<number, number> = {}
+  const onetimeBreakdownTL: Record<number, number> = {}
+  const onetimeBreakdownUSD: Record<number, number> = {}
+  const yearlyBreakdownTL: Record<number, number> = {}
+  const yearlyBreakdownUSD: Record<number, number> = {}
   let subtotalTL = 0
   let subtotalUSD = 0
+  let onetimeSubtotalTL = 0
+  let onetimeSubtotalUSD = 0
+  let yearlySubtotalTL = 0
+  let yearlySubtotalUSD = 0
+  let hasOnetimeTL = false
+  let hasOnetimeUSD = false
+  let hasYearlyTL = false
+  let hasYearlyUSD = false
 
   items.forEach(item => {
     // Ensure numeric values
     const amount = Number(item.totalPrice)
     const rate = Number(item.kdvRate || 20)
-    
+    const isYearly = item.isYearlyPayment ?? item.product?.isYearlyPayment ?? false
+
     const kdv = kdvEnabled ? amount * (rate / 100) : 0
-    
+
     if (item.currency === Currency.TL) {
       subtotalTL += amount
       breakdownTL[rate] = (breakdownTL[rate] || 0) + kdv
+      if (isYearly) {
+        hasYearlyTL = true
+        yearlySubtotalTL += amount
+        yearlyBreakdownTL[rate] = (yearlyBreakdownTL[rate] || 0) + kdv
+      } else {
+        hasOnetimeTL = true
+        onetimeSubtotalTL += amount
+        onetimeBreakdownTL[rate] = (onetimeBreakdownTL[rate] || 0) + kdv
+      }
     } else {
        subtotalUSD += amount
        breakdownUSD[rate] = (breakdownUSD[rate] || 0) + kdv
+       if (isYearly) {
+        hasYearlyUSD = true
+        yearlySubtotalUSD += amount
+        yearlyBreakdownUSD[rate] = (yearlyBreakdownUSD[rate] || 0) + kdv
+       } else {
+        hasOnetimeUSD = true
+        onetimeSubtotalUSD += amount
+        onetimeBreakdownUSD[rate] = (onetimeBreakdownUSD[rate] || 0) + kdv
+       }
     }
   })
-  
-  return { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD }
+
+  return {
+    breakdownTL,
+    breakdownUSD,
+    subtotalTL,
+    subtotalUSD,
+    onetimeSubtotalTL,
+    onetimeSubtotalUSD,
+    yearlySubtotalTL,
+    yearlySubtotalUSD,
+    onetimeBreakdownTL,
+    onetimeBreakdownUSD,
+    yearlyBreakdownTL,
+    yearlyBreakdownUSD,
+    hasOnetimeTL,
+    hasOnetimeUSD,
+    hasYearlyTL,
+    hasYearlyUSD
+  }
 }
 
 const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
   const { quotation, companyInfo, exchangeRate } = data
   
-  const { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD } = React.useMemo(() => 
+  const {
+    breakdownTL, breakdownUSD, subtotalTL, subtotalUSD,
+    onetimeSubtotalTL, onetimeSubtotalUSD, yearlySubtotalTL, yearlySubtotalUSD,
+    onetimeBreakdownTL, onetimeBreakdownUSD, yearlyBreakdownTL, yearlyBreakdownUSD,
+    hasOnetimeTL, hasOnetimeUSD, hasYearlyTL, hasYearlyUSD
+  } = React.useMemo(() =>
     calculateBreakdowns(quotation.items, quotation.kdvEnabled),
     [quotation.items, quotation.kdvEnabled]
   )
+
+  // Sum KDV amounts of a breakdown map
+  const sumKdv = (breakdown: Record<number, number>) =>
+    Object.values(breakdown).reduce((a, b) => a + b, 0)
+
+  // Renders the one-time ("tek seferlik") and yearly ("yıllık") payment groups
+  // for one currency: each group gets its own subtotal, KDV rows and group total.
+  // Empty groups (no items in that payment type) are skipped.
+  const renderPaymentGroups = (
+    isTL: boolean,
+    showOnetime: boolean,
+    showYearly: boolean,
+    onetimeSubtotal: number,
+    yearlySubtotal: number,
+    onetimeBreakdown: Record<number, number>,
+    yearlyBreakdown: Record<number, number>
+  ) => {
+    const fmt = (amount: number) => isTL ? `${formatPrice(amount)} TL` : `$${formatPrice(amount)}`
+    const currencySuffix = isTL ? ' (TL)' : ' (USD)'
+    const groupKey = isTL ? 'tl' : 'usd'
+    return (
+      <>
+        {/* Tek seferlik ödeme grubu */}
+        {showOnetime && (
+          <>
+            <Text style={styles.totalsGroupTitle}>TEK SEFERLİK ÖDEME{currencySuffix}</Text>
+            {quotation.kdvEnabled && (
+              <>
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>Ara Toplam:</Text>
+                  <Text style={styles.totalsValue}>{fmt(onetimeSubtotal)}</Text>
+                </View>
+                {Object.entries(onetimeBreakdown).map(([rate, amount]) => (
+                  <View style={styles.totalsRow} key={`onetime-kdv-${groupKey}-${rate}`}>
+                    <Text style={styles.totalsLabel}>KDV (%{rate}):</Text>
+                    <Text style={styles.totalsValue}>{fmt(amount)}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            <View style={styles.totalsRow}>
+              <Text style={[styles.totalsLabel, { fontWeight: 'bold' }]}>
+                {quotation.kdvEnabled ? 'Tek Seferlik Toplam (KDV Dahil):' : 'Tek Seferlik Toplam:'}
+              </Text>
+              <Text style={[styles.totalsValue, { fontWeight: 'bold' }]}>
+                {fmt(onetimeSubtotal + sumKdv(onetimeBreakdown))}
+              </Text>
+            </View>
+          </>
+        )}
+
+        {/* Yıllık ödeme grubu */}
+        {showYearly && (
+          <>
+            <Text style={styles.totalsGroupTitle}>YILLIK ÖDEME{currencySuffix}</Text>
+            {quotation.kdvEnabled && (
+              <>
+                <View style={styles.totalsRow}>
+                  <Text style={styles.totalsLabel}>Ara Toplam:</Text>
+                  <Text style={styles.totalsValue}>{fmt(yearlySubtotal)}</Text>
+                </View>
+                {Object.entries(yearlyBreakdown).map(([rate, amount]) => (
+                  <View style={styles.totalsRow} key={`yearly-kdv-${groupKey}-${rate}`}>
+                    <Text style={styles.totalsLabel}>KDV (%{rate}):</Text>
+                    <Text style={styles.totalsValue}>{fmt(amount)}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            <View style={styles.totalsRow}>
+              <Text style={[styles.totalsLabel, { fontWeight: 'bold' }]}>
+                {quotation.kdvEnabled ? 'Yıllık Toplam (KDV Dahil):' : 'Yıllık Toplam:'}
+              </Text>
+              <Text style={[styles.totalsValue, { fontWeight: 'bold' }]}>
+                {fmt(yearlySubtotal + sumKdv(yearlyBreakdown))}
+              </Text>
+            </View>
+          </>
+        )}
+      </>
+    )
+  }
 
   // Format price with Turkish locale
   const formatPrice = (amount: number): string => {
@@ -477,6 +632,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                     {item.product.description}
                   </Text>
                 )}
+                {(item.isYearlyPayment ?? item.product.isYearlyPayment) ? (
+                  <Text style={styles.yearlyTag}>YILLIK ÖDEME</Text>
+                ) : null}
               </View>
             </View>
             <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
@@ -512,6 +670,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             {quotation.kdvEnabled && (
               <>
                 {(subtotalTL > 0) && (
+                  hasYearlyTL ? renderPaymentGroups(
+                    true, hasOnetimeTL, hasYearlyTL, onetimeSubtotalTL, yearlySubtotalTL, onetimeBreakdownTL, yearlyBreakdownTL
+                  ) : (
                   <>
                     <View style={styles.totalsRow}>
                       <Text style={styles.totalsLabel}>Ara Toplam (TL):</Text>
@@ -528,8 +689,12 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                         </View>
                     ))}
                   </>
+                  )
                 )}
                 {(subtotalUSD > 0) && (
+                  hasYearlyUSD ? renderPaymentGroups(
+                    false, hasOnetimeUSD, hasYearlyUSD, onetimeSubtotalUSD, yearlySubtotalUSD, onetimeBreakdownUSD, yearlyBreakdownUSD
+                  ) : (
                   <>
                     <View style={styles.totalsRow}>
                       <Text style={styles.totalsLabel}>Ara Toplam (USD):</Text>
@@ -546,14 +711,25 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
                         </View>
                     ))}
                   </>
+                  )
                 )}
               </>
+            )}
+
+            {/* Split totals for yearly items when KDV is disabled */}
+            {!quotation.kdvEnabled && (subtotalTL > 0) && hasYearlyTL && renderPaymentGroups(
+              true, hasOnetimeTL, hasYearlyTL, onetimeSubtotalTL, yearlySubtotalTL, onetimeBreakdownTL, yearlyBreakdownTL
+            )}
+            {!quotation.kdvEnabled && (subtotalUSD > 0) && hasYearlyUSD && renderPaymentGroups(
+              false, hasOnetimeUSD, hasYearlyUSD, onetimeSubtotalUSD, yearlySubtotalUSD, onetimeBreakdownUSD, yearlyBreakdownUSD
             )}
             
             {(quotation.totalTL || 0) > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
-                  {quotation.kdvEnabled ? 'KDV Dahil Toplam (TL):' : 'Toplam (TL):'}
+                  {quotation.kdvEnabled
+                    ? (hasYearlyTL ? 'KDV Dahil Genel Toplam (TL):' : 'KDV Dahil Toplam (TL):')
+                    : (hasYearlyTL ? 'Genel Toplam (TL):' : 'Toplam (TL):')}
                 </Text>
                 <Text style={styles.totalsValue}>{formatPrice(subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0))} TL</Text>
               </View>
@@ -581,7 +757,9 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             {(quotation.totalUSD || 0) > 0 && (
               <View style={styles.totalsRow}>
                 <Text style={styles.totalsLabel}>
-                  {quotation.kdvEnabled ? 'KDV Dahil Toplam (USD):' : 'Toplam (USD):'}
+                  {quotation.kdvEnabled
+                    ? (hasYearlyUSD ? 'KDV Dahil Genel Toplam (USD):' : 'KDV Dahil Toplam (USD):')
+                    : (hasYearlyUSD ? 'Genel Toplam (USD):' : 'Toplam (USD):')}
                 </Text>
                 <Text style={styles.totalsValue}>${formatPrice(subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0))}</Text>
               </View>

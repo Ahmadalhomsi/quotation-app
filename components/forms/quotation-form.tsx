@@ -75,6 +75,7 @@ interface Product {
     currency: Currency
     description?: string
     kdvRate: number
+    isYearlyPayment?: boolean
 }
 
 interface QuotationItem extends CreateQuotationItemData {
@@ -83,6 +84,7 @@ interface QuotationItem extends CreateQuotationItemData {
     totalPrice: number
     discount?: number
     kdvRate: number
+    isYearlyPayment: boolean
 }
 
 interface QuotationFormProps {
@@ -148,7 +150,14 @@ function SortableTableRow({
                         <GripVertical className="h-4 w-4 text-gray-400" />
                     </button>
                     <div>
-                        <div className="font-medium">{item.product?.name}</div>
+                        <div className="font-medium">
+                            {item.product?.name}
+                            {item.isYearlyPayment && (
+                                <Badge variant="outline" className="ml-2 text-[10px] py-0">
+                                    Yıllık
+                                </Badge>
+                            )}
+                        </div>
                     </div>
                 </div>
             </TableCell>
@@ -434,6 +443,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                     currency: selectedCurrency,
                     discount: newItem.discount || 0,
                     kdvRate: product.kdvRate || 20,
+                    isYearlyPayment: product.isYearlyPayment ?? false,
                     totalPrice,
                     product
                 }
@@ -472,6 +482,7 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             currency: newItem.currency || Currency.TL,
             discount: newItem.discount || 0,
             kdvRate: product.kdvRate || 20,
+            isYearlyPayment: product.isYearlyPayment ?? false,
             totalPrice,
             product
         }
@@ -534,17 +545,32 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             const itemKdvRate = typeof item.kdvRate === 'string' ? parseFloat(item.kdvRate) : Number(item.kdvRate || 20)
             const itemKdvAmount = kdvEnabled ? itemTotal * (itemKdvRate / 100) : 0
             const itemWithKdv = itemTotal + itemKdvAmount
-            
+            const isYearly = item.isYearlyPayment ?? false
+
             if (item.currency === Currency.TL) {
                 acc.subtotalTL += itemTotal
                 acc.kdvAmountTL += itemKdvAmount
                 acc.totalTL += itemWithKdv
                 acc.breakdownTL[itemKdvRate] = (acc.breakdownTL[itemKdvRate] || 0) + itemKdvAmount
+                if (isYearly) {
+                    acc.yearlySubtotalTL += itemTotal
+                    acc.yearlyTotalTL += itemWithKdv
+                } else {
+                    acc.onetimeSubtotalTL += itemTotal
+                    acc.onetimeTotalTL += itemWithKdv
+                }
             } else {
                 acc.subtotalUSD += itemTotal
                 acc.kdvAmountUSD += itemKdvAmount
                 acc.totalUSD += itemWithKdv
                 acc.breakdownUSD[itemKdvRate] = (acc.breakdownUSD[itemKdvRate] || 0) + itemKdvAmount
+                if (isYearly) {
+                    acc.yearlySubtotalUSD += itemTotal
+                    acc.yearlyTotalUSD += itemWithKdv
+                } else {
+                    acc.onetimeSubtotalUSD += itemTotal
+                    acc.onetimeTotalUSD += itemWithKdv
+                }
             }
             return acc
         }, { 
@@ -555,7 +581,15 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             kdvAmountTL: 0, 
             kdvAmountUSD: 0,
             breakdownTL: {} as Record<number, number>,
-            breakdownUSD: {} as Record<number, number>
+            breakdownUSD: {} as Record<number, number>,
+            onetimeSubtotalTL: 0,
+            yearlySubtotalTL: 0,
+            onetimeTotalTL: 0,
+            yearlyTotalTL: 0,
+            onetimeSubtotalUSD: 0,
+            yearlySubtotalUSD: 0,
+            onetimeTotalUSD: 0,
+            yearlyTotalUSD: 0
         })
 
         // Apply total discount
@@ -585,7 +619,15 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
             discountAmountTL: totals.totalTL * (totalDiscount / 100),
             discountAmountUSD: totals.totalUSD * (totalDiscount / 100),
             breakdownTL: finalBreakdownTL,
-            breakdownUSD: finalBreakdownUSD
+            breakdownUSD: finalBreakdownUSD,
+            onetimeSubtotalTL: totals.onetimeSubtotalTL,
+            yearlySubtotalTL: totals.yearlySubtotalTL,
+            onetimeTotalTL: totals.onetimeTotalTL,
+            yearlyTotalTL: totals.yearlyTotalTL,
+            onetimeSubtotalUSD: totals.onetimeSubtotalUSD,
+            yearlySubtotalUSD: totals.yearlySubtotalUSD,
+            onetimeTotalUSD: totals.onetimeTotalUSD,
+            yearlyTotalUSD: totals.yearlyTotalUSD
         }
     }
 
@@ -1041,6 +1083,19 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <span>₺{totals.preDiscountTotalTL.toFixed(2)}</span>
                                     </div>
 
+                                    {items.some(i => i.isYearlyPayment) && (
+                                        <div className="pt-1 border-t space-y-1">
+                                            <div className="flex justify-between">
+                                                <span>Tek Seferlik Toplam{ kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                                <span>₺{totals.onetimeTotalTL.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Yıllık Toplam{ kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                                <span>₺{totals.yearlyTotalTL.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="space-y-2">
                                         <Label>Son Tutar</Label>
                                         <div className="flex items-center gap-1">
@@ -1124,6 +1179,19 @@ Kullanıcı hataları ve elektrik kaynaklı arızalar garanti kapsamı dışınd
                                         <span>{kdvEnabled ? 'KDV Dahil Toplam:' : 'Toplam:'}</span>
                                         <span>${totals.preDiscountTotalUSD.toFixed(2)}</span>
                                     </div>
+
+                                    {items.some(i => i.isYearlyPayment) && (
+                                        <div className="pt-1 border-t space-y-1">
+                                            <div className="flex justify-between">
+                                                <span>Tek Seferlik Toplam{ kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                                <span>${totals.onetimeTotalUSD.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span>Yıllık Toplam{ kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                                <span>${totals.yearlyTotalUSD.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div className="space-y-2">
                                         <Label>Son Tutar</Label>

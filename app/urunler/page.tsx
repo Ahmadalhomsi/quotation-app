@@ -52,6 +52,7 @@ interface Product {
   photoUrl?: string | null
   isActive: boolean
   kdvRate: number
+  isYearlyPayment: boolean
   createdAt: string
   updatedAt: string
 }
@@ -308,7 +309,14 @@ export default function ProductsPage() {
                           </div>
                         )}
                         <div className="space-y-1 min-w-0 flex-1">
-                          <div className="font-medium truncate">{product.name}</div>
+                          <div className="font-medium truncate">
+                            {product.name}
+                            {product.isYearlyPayment && (
+                              <Badge variant="outline" className="ml-2 text-[10px] py-0 normal-case">
+                                Yıllık Ödeme
+                              </Badge>
+                            )}
+                          </div>
                           {product.description && (
                             <div 
                               className="text-sm text-muted-foreground line-clamp-2 break-words"

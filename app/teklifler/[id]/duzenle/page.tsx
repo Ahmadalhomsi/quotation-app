@@ -56,6 +56,7 @@ interface QuotationDetail {
     currency: Currency
     discount?: number
     kdvRate: number
+    isYearlyPayment?: boolean
     product: {
       id: string
       name: string
@@ -63,6 +64,7 @@ interface QuotationDetail {
       currency: Currency
       description: string | null
       kdvRate: number
+      isYearlyPayment?: boolean
     }
   }>
   terms: string | null
@@ -76,6 +78,7 @@ interface Product {
   price: number
   currency: Currency
   kdvRate: number
+  isYearlyPayment?: boolean
 }
 
 interface Customer {
@@ -93,6 +96,7 @@ interface QuotationItem {
   currency: Currency
   discount?: number
   kdvRate: number
+  isYearlyPayment: boolean
   product?: Product
   totalPrice: number
 }
@@ -179,6 +183,7 @@ export default function EditQuotationPage() {
           currency: item.currency,
           discount: item.discount || 0,
           kdvRate: item.kdvRate || 20,
+          isYearlyPayment: item.isYearlyPayment ?? item.product?.isYearlyPayment ?? false,
           productName: item.product?.name || '',
         }))
       }
@@ -274,6 +279,7 @@ export default function EditQuotationPage() {
     currency: item.currency,
     discount: Number(item.discount) || 0,
     kdvRate: Number(item.kdvRate) || 20,
+    isYearlyPayment: item.isYearlyPayment ?? item.product.isYearlyPayment ?? false,
     product: {
       id: item.product.id,
       name: item.product.name,
@@ -281,6 +287,7 @@ export default function EditQuotationPage() {
       price: Number(item.product.price),
       currency: item.product.currency,
       kdvRate: Number(item.product.kdvRate) || 20,
+      isYearlyPayment: item.product.isYearlyPayment ?? false,
     },
     totalPrice: Number(item.totalPrice)
   }))

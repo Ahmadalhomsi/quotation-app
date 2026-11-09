@@ -92,6 +92,7 @@ export interface Product {
   photoUrl?: string     // Ürün Fotoğrafı URL'i
   isActive: boolean     // Aktif mi
   kdvRate: number       // KDV oranı (%)
+  isYearlyPayment: boolean // Yıllık ödeme mi (false = tek seferlik)
   createdAt: Date
   updatedAt: Date
 }
@@ -106,6 +107,7 @@ export interface CreateProductData {
   photoUrl?: string
   isActive?: boolean
   kdvRate?: number       // KDV oranı (%)
+  isYearlyPayment?: boolean // Yıllık ödeme mi (varsayılan: false / tek seferlik)
 }
 
 // Teklif kalemi tipleri
@@ -117,6 +119,7 @@ export interface QuotationItem {
   currency: Currency    // Para Birimi
   discount?: number     // İskonto oranı (%)
   kdvRate: number       // KDV oranı (%)
+  isYearlyPayment: boolean // Yıllık ödeme mi (false = tek seferlik)
   quotationId: string
   productId: string
   product: Product
@@ -132,6 +135,7 @@ export interface CreateQuotationItemData {
   currency: Currency
   discount?: number      // İskonto oranı (%)
   kdvRate?: number       // KDV oranı (%)
+  isYearlyPayment?: boolean // Yıllık ödeme mi (varsayılan: false / tek seferlik)
 }
 
 // Teklif tipleri

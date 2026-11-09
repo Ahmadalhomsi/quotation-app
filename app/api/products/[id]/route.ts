@@ -80,6 +80,7 @@ export async function PUT(
     const sku = formData.get('sku') as string
     const isActive = (formData.get('isActive') as string) === 'true'
     const kdvRate = formData.get('kdvRate') ? parseFloat(formData.get('kdvRate') as string) : 20
+    const isYearlyPayment = (formData.get('isYearlyPayment') as string) === 'true'
     const photo = formData.get('photo') as File | null
     const removePhoto = (formData.get('removePhoto') as string) === 'true'
     
@@ -196,7 +197,8 @@ export async function PUT(
       sku: sku && sku.trim() ? sku.trim() : null,
       photoUrl,
       isActive,
-      kdvRate
+      kdvRate,
+      isYearlyPayment
     }
 
     const product = await prisma.product.update({

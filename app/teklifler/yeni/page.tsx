@@ -35,6 +35,7 @@ interface Product {
   currency: Currency
   description?: string
   kdvRate: number
+  isYearlyPayment?: boolean
 }
 
 interface QuotationItem {
@@ -45,6 +46,7 @@ interface QuotationItem {
   currency: Currency
   discount?: number
   kdvRate: number
+  isYearlyPayment: boolean
   product?: Product
   totalPrice: number
 }
@@ -67,6 +69,7 @@ interface CloneItem {
   currency: Currency
   discount?: number
   kdvRate: number
+  isYearlyPayment?: boolean
   product: {
     id: string
     name: string
@@ -74,6 +77,7 @@ interface CloneItem {
     price: number
     currency: Currency
     kdvRate: number
+    isYearlyPayment?: boolean
   }
   totalPrice: number
 }
@@ -144,6 +148,7 @@ function NewQuotationContent() {
             currency: item.currency,
             discount: Number(item.discount) || 0,
             kdvRate: Number(item.kdvRate) || 20,
+            isYearlyPayment: item.isYearlyPayment ?? item.product.isYearlyPayment ?? false,
             product: {
               id: item.product.id,
               name: item.product.name,
@@ -151,6 +156,7 @@ function NewQuotationContent() {
               price: Number(item.product.price),
               currency: item.product.currency,
               kdvRate: Number(item.product.kdvRate) || 20,
+              isYearlyPayment: item.product.isYearlyPayment ?? false,
             },
             totalPrice: Number(item.totalPrice)
           }))
@@ -212,6 +218,7 @@ function NewQuotationContent() {
           currency: item.currency,
           discount: item.discount || 0,
           kdvRate: item.kdvRate || 20,
+          isYearlyPayment: item.isYearlyPayment ?? item.product?.isYearlyPayment ?? false,
           productName: item.product?.name || '',
         }))
       }

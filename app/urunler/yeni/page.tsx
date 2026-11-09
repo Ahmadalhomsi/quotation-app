@@ -40,7 +40,8 @@ export default function NewProductPage() {
     currency: Currency.TL,
     sku: '',
     isActive: true,
-    kdvRate: 20
+    kdvRate: 20,
+    isYearlyPayment: false
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -135,6 +136,7 @@ export default function NewProductPage() {
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
       submitData.append('kdvRate', (formData.kdvRate ?? 20).toString())
+      submitData.append('isYearlyPayment', (formData.isYearlyPayment ?? false).toString())
       
       if (selectedFile) {
         submitData.append('photo', selectedFile)
@@ -347,6 +349,22 @@ export default function NewProductPage() {
                     Bu ürün için uygulanacak KDV oranı
                   </p>
                 </div>
+
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isYearlyPayment"
+                      checked={formData.isYearlyPayment ?? false}
+                      onChange={(e) => handleInputChange('isYearlyPayment', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <Label htmlFor="isYearlyPayment">Yıllık Ödeme</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    İşaretliyse bu ürün yıllık ödemeli olarak fiyatlandırılır, işaretsizse tek seferlik ödemedir. Teklife eklendiğinde toplamlarda ayrı gösterilir.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -442,6 +460,13 @@ export default function NewProductPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm">
                       {formData.price} {CurrencyLabels[formData.currency]}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-muted-foreground">Ödeme:</span>
+                    <span className="text-sm">
+                      {formData.isYearlyPayment ? 'Yıllık' : 'Tek Seferlik'}
                     </span>
                   </div>
                   

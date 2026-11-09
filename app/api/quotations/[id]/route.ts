@@ -191,6 +191,7 @@ export async function PUT(
           currency: string;
           discount?: number;
           kdvRate?: number;
+          isYearlyPayment?: boolean;
           productName: string;
           productType?: string;
         }) => ({
@@ -202,6 +203,7 @@ export async function PUT(
           currency: item.currency,
           discount: item.discount || 0,
           kdvRate: item.kdvRate || 20,
+          isYearlyPayment: item.isYearlyPayment ?? false,
           productName: item.productName
         }))
       })

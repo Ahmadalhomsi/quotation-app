@@ -45,6 +45,7 @@ interface Product {
   photoUrl?: string | null
   isActive: boolean
   kdvRate: number
+  isYearlyPayment: boolean
 }
 
 interface UpdateProductData {
@@ -56,6 +57,7 @@ interface UpdateProductData {
   sku: string
   isActive: boolean
   kdvRate: number
+  isYearlyPayment: boolean
 }
 
 export default function EditProductPage() {
@@ -77,7 +79,8 @@ export default function EditProductPage() {
     currency: Currency.TL,
     sku: '',
     isActive: true,
-    kdvRate: 20
+    kdvRate: 20,
+    isYearlyPayment: false
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -104,7 +107,8 @@ export default function EditProductPage() {
           currency: product.currency || Currency.TL,
           sku: product.sku || '',
           isActive: product.isActive ?? true,
-          kdvRate: Number(product.kdvRate) || 20
+          kdvRate: Number(product.kdvRate) || 20,
+          isYearlyPayment: product.isYearlyPayment ?? false
         })
         
         if (product.photoUrl) {
@@ -222,6 +226,7 @@ export default function EditProductPage() {
       submitData.append('sku', formData.sku?.trim() || '')
       submitData.append('isActive', (formData.isActive ?? true).toString())
       submitData.append('kdvRate', (formData.kdvRate ?? 20).toString())
+      submitData.append('isYearlyPayment', (formData.isYearlyPayment ?? false).toString())
       
       if (selectedFile) {
         submitData.append('photo', selectedFile)
@@ -460,6 +465,22 @@ export default function EditProductPage() {
                   </p>
                 </div>
 
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="isYearlyPayment"
+                      checked={formData.isYearlyPayment ?? false}
+                      onChange={(e) => handleInputChange('isYearlyPayment', e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <Label htmlFor="isYearlyPayment">Yıllık Ödeme</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    İşaretliyse bu ürün yıllık ödemeli olarak fiyatlandırılır, işaretsizse tek seferlik ödemedir. Teklife eklendiğinde toplamlarda ayrı gösterilir.
+                  </p>
+                </div>
+
                 {formData.purchasePrice && formData.purchasePrice > 0 && (
                   <div className="mt-4 p-3 bg-muted rounded-lg">
                     <div className="flex items-center justify-between text-sm">
@@ -616,6 +637,13 @@ export default function EditProductPage() {
                     <span className="font-mono">
                       {formData.currency === Currency.TL ? '₺' : '$'}{formData.price.toFixed(2)}
                     </span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Ödeme Tipi:</span>
+                    <br />
+                    <Badge variant={formData.isYearlyPayment ? 'default' : 'secondary'}>
+                      {formData.isYearlyPayment ? 'Yıllık' : 'Tek Seferlik'}
+                    </Badge>
                   </div>
                   {formData.purchasePrice && formData.purchasePrice > 0 && (
                     <div>

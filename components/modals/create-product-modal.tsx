@@ -31,6 +31,7 @@ interface Product {
   sku?: string
   isActive?: boolean
   kdvRate: number
+  isYearlyPayment?: boolean
 }
 
 interface CreateProductModalProps {
@@ -46,7 +47,8 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
     price: '',
     currency: Currency.TL,
     sku: '',
-    kdvRate: '20'
+    kdvRate: '20',
+    isYearlyPayment: false
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -84,6 +86,7 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
       }
       formDataToSend.append('kdvRate', formData.kdvRate || '20')
       formDataToSend.append('isActive', 'true')
+      formDataToSend.append('isYearlyPayment', formData.isYearlyPayment.toString())
       
       const response = await fetch('/api/products', {
         method: 'POST',
@@ -105,7 +108,8 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
         price: '',
         currency: Currency.TL,
         sku: '',
-        kdvRate: '20'
+        kdvRate: '20',
+        isYearlyPayment: false
       })
       setErrors({})
       setOpen(false)
@@ -117,7 +121,7 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
     }
   }
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -257,6 +261,20 @@ export function CreateProductModal({ onProductCreated }: CreateProductModalProps
               }}
               placeholder="Örn: PRD-001"
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="modal-isYearlyPayment"
+              checked={formData.isYearlyPayment}
+              onChange={(e) => handleInputChange('isYearlyPayment', e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+            />
+            <Label htmlFor="modal-isYearlyPayment">Yıllık Ödeme</Label>
+            <span className="text-xs text-muted-foreground">
+              (İşaretsizse tek seferlik ödeme)
+            </span>
           </div>
           
           <div className="flex justify-end space-x-2 pt-4">

@@ -206,6 +206,7 @@ export async function POST(request: NextRequest) {
             currency: string;
             discount?: number;
             kdvRate?: number;
+            isYearlyPayment?: boolean;
             productName: string;
           }) => ({
             productId: item.productId,
@@ -215,6 +216,7 @@ export async function POST(request: NextRequest) {
             currency: item.currency,
             discount: item.discount || 0,
             kdvRate: item.kdvRate || 20,
+            isYearlyPayment: item.isYearlyPayment ?? false,
             productName: item.productName
           }))
         }

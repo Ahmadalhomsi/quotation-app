@@ -40,6 +40,7 @@ interface Product {
   sku: string | null
   photoUrl?: string | null
   isActive: boolean
+  isYearlyPayment: boolean
   createdAt: string
   updatedAt: string
 }
@@ -260,6 +261,9 @@ export default function ProductDetailPage() {
                             Pasif
                           </>
                         )}
+                      </Badge>
+                      <Badge variant={product.isYearlyPayment ? 'default' : 'secondary'}>
+                        {product.isYearlyPayment ? 'Yıllık Ödeme' : 'Tek Seferlik Ödeme'}
                       </Badge>
                     </div>
                   </div>

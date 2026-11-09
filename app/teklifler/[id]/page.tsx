@@ -100,6 +100,7 @@ interface QuotationDetail {
     currency: string
     discount?: number
     kdvRate: number
+    isYearlyPayment: boolean
     product: {
       id: string
       name: string
@@ -108,6 +109,7 @@ interface QuotationDetail {
       description: string | null
       photoUrl?: string | null
       kdvRate: number
+      isYearlyPayment: boolean
     }
   }>
   terms: string | null
@@ -217,12 +219,14 @@ export default function QuotationDetailPage() {
           currency: item.currency as Currency,
           discount: item.discount || 0,
           kdvRate: item.kdvRate || 20,
+          isYearlyPayment: item.isYearlyPayment ?? item.product.isYearlyPayment ?? false,
           product: {
             ...item.product,
             description: item.product.description || undefined,
             photoUrl: item.product.photoUrl || undefined,
             currency: item.product.currency as Currency,
             kdvRate: item.product.kdvRate || 20,
+            isYearlyPayment: item.isYearlyPayment ?? item.product.isYearlyPayment ?? false,
             createdAt: new Date(),
             updatedAt: new Date(),
             isActive: true
@@ -250,31 +254,53 @@ export default function QuotationDetailPage() {
   }
 
   const calculateBreakdowns = () => {
-    if (!quotation) return { breakdownTL: {}, breakdownUSD: {}, subtotalTL: 0, subtotalUSD: 0 }
+    if (!quotation) return { 
+      breakdownTL: {}, breakdownUSD: {}, subtotalTL: 0, subtotalUSD: 0,
+      onetimeTotalTL: 0, yearlyTotalTL: 0, onetimeTotalUSD: 0, yearlyTotalUSD: 0,
+      hasYearlyItems: false
+    }
     
     const breakdownTL: Record<number, number> = {}
     const breakdownUSD: Record<number, number> = {}
     let subtotalTL = 0
     let subtotalUSD = 0
+    let onetimeTotalTL = 0
+    let yearlyTotalTL = 0
+    let onetimeTotalUSD = 0
+    let yearlyTotalUSD = 0
+    let hasYearlyItems = false
 
     quotation.items.forEach(item => {
       const amount = typeof item.totalPrice === 'string' ? parseFloat(item.totalPrice) : Number(item.totalPrice)
       const rate = typeof item.kdvRate === 'string' ? parseFloat(item.kdvRate) : Number(item.kdvRate || 20)
       const kdv = quotation.kdvEnabled ? amount * (rate / 100) : 0
+      const withKdv = amount + kdv
+      const isYearly = item.isYearlyPayment ?? item.product?.isYearlyPayment ?? false
+      if (isYearly) hasYearlyItems = true
       
       if (item.currency === 'TL') {
         subtotalTL += amount
         breakdownTL[rate] = (breakdownTL[rate] || 0) + kdv
+        if (isYearly) {
+          yearlyTotalTL += withKdv
+        } else {
+          onetimeTotalTL += withKdv
+        }
       } else {
          subtotalUSD += amount
          breakdownUSD[rate] = (breakdownUSD[rate] || 0) + kdv
+         if (isYearly) {
+          yearlyTotalUSD += withKdv
+         } else {
+          onetimeTotalUSD += withKdv
+         }
       }
     })
     
-    return { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD }
+    return { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD, onetimeTotalTL, yearlyTotalTL, onetimeTotalUSD, yearlyTotalUSD, hasYearlyItems }
   }
 
-  const { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD } = calculateBreakdowns()
+  const { breakdownTL, breakdownUSD, subtotalTL, subtotalUSD, onetimeTotalTL, yearlyTotalTL, onetimeTotalUSD, yearlyTotalUSD, hasYearlyItems } = calculateBreakdowns()
 
   const handleDelete = async () => {
     if (!confirm('Bu teklifi silmek istediğinizden emin misiniz?')) return
@@ -543,7 +569,14 @@ export default function QuotationDetailPage() {
                               </div>
                             )}
                             <div>
-                              <div className="font-medium">{item.product.name}</div>
+                              <div className="font-medium">
+                                {item.product.name}
+                                {(item.isYearlyPayment ?? item.product.isYearlyPayment) && (
+                                  <Badge variant="outline" className="ml-2 text-[10px] py-0">
+                                    Yıllık Ödeme
+                                  </Badge>
+                                )}
+                              </div>
                               {item.product.description && (
                                 <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                                   {item.product.description}
@@ -595,7 +628,14 @@ export default function QuotationDetailPage() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="font-medium text-sm leading-snug">{item.product.name}</div>
+                        <div className="font-medium text-sm leading-snug">
+                          {item.product.name}
+                          {(item.isYearlyPayment ?? item.product.isYearlyPayment) && (
+                            <Badge variant="outline" className="ml-2 text-[10px] py-0">
+                              Yıllık Ödeme
+                            </Badge>
+                          )}
+                        </div>
                         {item.product.description && (
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
                             {item.product.description}
@@ -708,6 +748,18 @@ export default function QuotationDetailPage() {
                             {formatPrice((subtotalTL + (breakdownTL ? Object.values(breakdownTL).reduce((a, b) => a + b, 0) : 0)), 'TL')}
                         </span>
                     </div>
+                     {hasYearlyItems && (
+                         <div className="space-y-1 pt-1 border-t">
+                             <div className="flex justify-between text-sm">
+                                 <span className="text-muted-foreground">Tek Seferlik Toplam (TL){quotation.kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                 <span className="font-mono">{formatPrice(onetimeTotalTL, 'TL')}</span>
+                             </div>
+                             <div className="flex justify-between text-sm">
+                                 <span className="text-muted-foreground">Yıllık Toplam (TL){quotation.kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                 <span className="font-mono">{formatPrice(yearlyTotalTL, 'TL')}</span>
+                             </div>
+                         </div>
+                     )}
                     {quotation.totalDiscount > 0 && (
                         <>
                             <div className="flex justify-between text-green-600">
@@ -755,6 +807,18 @@ export default function QuotationDetailPage() {
                                 {formatPrice((subtotalUSD + (breakdownUSD ? Object.values(breakdownUSD).reduce((a, b) => a + b, 0) : 0)), 'USD')}
                             </span>
                         </div>
+                        {hasYearlyItems && (
+                            <div className="space-y-1 pt-1 border-t">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Tek Seferlik Toplam (USD){quotation.kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                    <span className="font-mono">{formatPrice(onetimeTotalUSD, 'USD')}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">Yıllık Toplam (USD){quotation.kdvEnabled ? ' (KDV Dahil)' : ''}:</span>
+                                    <span className="font-mono">{formatPrice(yearlyTotalUSD, 'USD')}</span>
+                                </div>
+                            </div>
+                        )}
                         {quotation.totalDiscount > 0 && (
                             <>
                                 <div className="flex justify-between text-green-600">
