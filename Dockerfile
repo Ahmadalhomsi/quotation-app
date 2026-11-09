@@ -26,7 +26,11 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy package.json and Prisma schema for prisma generate
-COPY package.json ./
+# The lockfile and workspace file are required here too: pnpm verifies
+# node_modules against them before running the command. Without them pnpm
+# re-resolves and re-installs deps (drifting from the lockfile) and, missing
+# the allowBuilds policy in pnpm-workspace.yaml, fails with ERR_PNPM_IGNORED_BUILDS.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 RUN pnpm prisma generate
 
