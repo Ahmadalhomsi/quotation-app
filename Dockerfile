@@ -49,6 +49,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apk add --no-cache curl
 
+# Prisma CLI (pinned to the version in package.json) so pending database
+# migrations can be applied at container start (see docker-entrypoint.sh)
+RUN npm install -g prisma@6.19.3
+ENV PRISMA_HIDE_UPDATE_MESSAGE=1
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
@@ -58,6 +63,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+
+# Entrypoint applies pending DB migrations before booting the app
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Remove build cache (not needed at runtime)
 RUN rm -rf .next/cache
@@ -74,4 +83,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
