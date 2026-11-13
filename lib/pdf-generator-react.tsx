@@ -18,6 +18,10 @@ Font.register({
   ],
 })
 
+// Disable automatic hyphenation: react-pdf's default hyphenator is English-only
+// and splits Turkish words mid-word ("tele-fonunuzdan", "her-hangi").
+Font.registerHyphenationCallback((word) => [word])
+
 // Create modern, compact styles
 const styles = StyleSheet.create({
   page: {
@@ -147,12 +151,26 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     padding: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
     minHeight: 30,
+  },
+  tableRowMain: {
+    flexDirection: 'row',
     alignItems: 'center',
+  },
+  // Product description spans the full row width under the name/price line,
+  // instead of being squeezed into the narrow product column.
+  itemDescription: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 0.5,
+    borderTopColor: '#E5E7EB',
+    fontSize: 7.5,
+    lineHeight: 1.45,
+    color: '#4B5563',
   },
   tableRowEven: {
     backgroundColor: '#F8FAFC',
@@ -617,47 +635,49 @@ const QuotationPDF: React.FC<QuotationPDFProps> = ({ data }) => {
             ]}
             wrap={false}
           >
-            <View style={styles.productName}>
-              {item.product.photoUrl && (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image 
-                  style={styles.productImage} 
-                  src={item.product.photoUrl}
-                />
-              )}
-              <View style={styles.productInfo}>
-                <Text style={styles.tableCellBold}>{item.product.name}</Text>
-                {item.product.description && (
-                  <Text style={[styles.productType, { marginTop: 2 }]}>
-                    {item.product.description}
-                  </Text>
+            <View style={styles.tableRowMain}>
+              <View style={styles.productName}>
+                {item.product.photoUrl && (
+                  // eslint-disable-next-line jsx-a11y/alt-text
+                  <Image
+                    style={styles.productImage}
+                    src={item.product.photoUrl}
+                  />
                 )}
-                {(item.isYearlyPayment ?? item.product.isYearlyPayment) ? (
-                  <Text style={styles.yearlyTag}>YILLIK ÖDEME</Text>
-                ) : null}
+                <View style={styles.productInfo}>
+                  <Text style={styles.tableCellBold}>{item.product.name}</Text>
+                  {(item.isYearlyPayment ?? item.product.isYearlyPayment) ? (
+                    <Text style={styles.yearlyTag}>YILLIK ÖDEME</Text>
+                  ) : null}
+                </View>
               </View>
-            </View>
-            <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
-            <Text style={[styles.tableCell, styles.unitPrice]}>
-              {item.currency === 'TL' 
-                ? `${formatPrice(item.unitPrice)} TL`
-                : `$${formatPrice(item.unitPrice)}`
-              }
-            </Text>
-            <Text style={[styles.tableCell, styles.unitPrice]}>
-              {item.discount ? `%${item.discount}` : '-'}
-            </Text>
-            {quotation.showProductKdv && (
-              <Text style={[styles.tableCell, styles.quantity]}>
-                %{item.kdvRate || 20}
+              <Text style={[styles.tableCell, styles.quantity]}>{item.quantity}</Text>
+              <Text style={[styles.tableCell, styles.unitPrice]}>
+                {item.currency === 'TL' 
+                  ? `${formatPrice(item.unitPrice)} TL`
+                  : `$${formatPrice(item.unitPrice)}`
+                }
               </Text>
-            )}
-            <Text style={[styles.tableCellBold, styles.total]}>
-              {item.currency === 'TL' 
-                ? `${formatPrice(item.totalPrice)} TL`
-                : `$${formatPrice(item.totalPrice)}`
-              }
-            </Text>
+              <Text style={[styles.tableCell, styles.unitPrice]}>
+                {item.discount ? `%${item.discount}` : '-'}
+              </Text>
+              {quotation.showProductKdv && (
+                <Text style={[styles.tableCell, styles.quantity]}>
+                  %{item.kdvRate || 20}
+                </Text>
+              )}
+              <Text style={[styles.tableCellBold, styles.total]}>
+                {item.currency === 'TL'
+                  ? `${formatPrice(item.totalPrice)} TL`
+                  : `$${formatPrice(item.totalPrice)}`
+                }
+              </Text>
+            </View>
+            {item.product.description ? (
+              <Text style={styles.itemDescription}>
+                {item.product.description.trim()}
+              </Text>
+            ) : null}
           </View>
         ))}
 
